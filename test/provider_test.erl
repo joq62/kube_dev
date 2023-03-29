@@ -12,8 +12,8 @@
 -include_lib("common_test/include/ct.hrl").
 
 start()->
-    io:format("started ~p~n",[{?MODULE}]),
-    ?assertMatch(["kube","main"],lists:sort(db_provider_spec:get_all_id())),
+   % io:format("started ~p~n",[{?MODULE}]),
+    ["kube","main"]=lists:sort(db_provider_spec:get_all_id()),
     ok.
     
 
