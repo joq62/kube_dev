@@ -6,7 +6,7 @@
 -include_lib("common_test/include/ct.hrl").
 
 all() ->
-    [setup].
+    [setup,provider].
 
 
 init_per_suite(Config) ->
@@ -17,7 +17,17 @@ end_per_suite(_Config) ->
  
     ok.
 
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+provider(_Config)->
+     ?assertMatch(ok,provider_test:start()),
+    ok.
+   
 
+    
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -29,6 +39,8 @@ setup(_Config)->
     ?assertMatch(pong,common:ping()),
     ?assertMatch(ok,application:start(sd)),
     ?assertMatch(pong,sd:ping()),
+    ?assertMatch(ok,application:start(etcd)),
+    ?assertMatch(pong,etcd:ping()),
     ?assertMatch(ok,application:start(kube)),
     ?assertMatch(pong,kube:ping()),
     ok.
