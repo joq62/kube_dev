@@ -40,9 +40,22 @@ prod:
 
 dev:
 	rm -rf config/*~;
+	rm -rf rebar.lock;
 	rm -rf test/*.beam test/*~;
 	rm -rf apps/kube/src/*~ *~;
 	rm -rf apps/kube/src/*.beam;
 	rm -rf  _build;
 	rebar3 release;
 	rebar3 ct
+eunit:
+	rm -rf config/*~;
+	rm -rf rebar.lock;
+	rm -rf test/*.beam test/*~;
+	rm -rf apps/kube/src/*~ *~;
+	rm -rf apps/kube/src/*.beam;
+	rm -rf  _build;
+	rebar3 release;
+	rm -rf test_ebin;
+	mkdir test_ebin;
+	erlc -o test_ebin test/*.erl;
+	erl -pa test_ebin -sname do_test -run $(m) start $(a) $(b) -setcookie $(c)

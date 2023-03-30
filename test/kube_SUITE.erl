@@ -1,20 +1,32 @@
 -module(kube_SUITE).
 
 -compile(export_all).
+-define(Cookie,a_cookie).
 
 -include_lib("stdlib/include/assert.hrl").
 -include_lib("common_test/include/ct.hrl").
 
 all() ->
-    [setup,provider].
+    [setup,provider,
+     start_nodes].
 
 
 init_per_suite(Config) ->
-  
     Config.
 
 end_per_suite(_Config) ->
  
+    ok.
+
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_nodes(_Config)->
+    ?assertMatch(glurk,host_server:create_node("c201")),
     ok.
 
 %%--------------------------------------------------------------------
@@ -43,5 +55,7 @@ setup(_Config)->
     ?assertMatch(pong,etcd:ping()),
     ?assertMatch(ok,application:start(kube)),
     ?assertMatch(pong,kube:ping()),
+    ?assertMatch(pong,host_server:ping()),
+    
     ok.
                                 

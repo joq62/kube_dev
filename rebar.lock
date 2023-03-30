@@ -4,7 +4,7 @@
   0},
  {<<"etcd">>,
   {git,"https://github.com/joq62/etcd.git",
-       {ref,"f3c92b944cae736516b1c958b640cf85545f5650"}},
+       {ref,"285358ddd2a18cc02a52bec5f364a3225fd392ab"}},
   0},
  {<<"sd">>,
   {git,"https://github.com/joq62/sd.git",

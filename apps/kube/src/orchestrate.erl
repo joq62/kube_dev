@@ -11,8 +11,8 @@
 -define(SleepInterval,60*1000).
 %% API
 -export([
-	 start/2,
-	 start/3
+	 start/1,
+	 start/2
 	]).
 
 %%%===================================================================
@@ -24,10 +24,10 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-start(ClusterSpec,LeaderPid)->
-    start(ClusterSpec,LeaderPid,?SleepInterval).
+start(LeaderPid)->
+    start(LeaderPid,?SleepInterval).
 
-start(ClusterSpec,LeaderPid,SleepInterval)->
+start(LeaderPid,SleepInterval)->
   %  sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start orchestrate  ",[node()]]),
     timer:sleep(SleepInterval),
     Result=case leader:am_i_leader(LeaderPid,node(),5000) of
@@ -36,26 +36,19 @@ start(ClusterSpec,LeaderPid,SleepInterval)->
 		   [ok,ok,ok,ok];
 	       true->
 %		   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"am_i_leader",[true,node()]]),
-		   orchistrate(ClusterSpec,SleepInterval)
+		   orchistrate()
 	   end,
 %    sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"end orchestrate  ",[node()]]),
-    rpc:cast(node(),control,orchestrate_result,Result).
+    rpc:cast(node(),kube,orchestrate_result,Result).
 
 
-orchistrate(_ClusterSpec,_SleepInterval)->
+orchistrate()->
  %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"start orchestrate ",[node()]]),
-    ResultStartParents=rpc:call(node(),lib_control,start_parents,[],15*1000),
+    ResultStartHostNodes=rpc:call(node(),host_server,start_nodes,[],15*1000),
  %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"ResultStartParents ",[ResultStartParents]]),
 
-    ResultStartPods=rpc:call(node(),lib_control,start_pods,[],60*1000),
- %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"ResultStartPods ",[ResultStartPods]]),
-
-    ResultStartUserAppls=rpc:call(node(),lib_control,start_appls,[],60*1000), 
- %   sd:cast(log,log,debug,[?MODULE,?FUNCTION_NAME,?LINE,node(),"ResultStartUserAppls ",[ResultStartUserAppls]]),
-
-    ResultStartInfraAppls=ok, %% Shall be removed
-
-    [ResultStartParents,ResultStartPods,ResultStartInfraAppls,ResultStartUserAppls].
+   
+    [ResultStartHostNodes].
     
    
 

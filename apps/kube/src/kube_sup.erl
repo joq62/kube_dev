@@ -29,8 +29,12 @@ init([]) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [ #{id => kube,      
-		     start => {kube,start,[]}}],
+    ChildSpecs = [
+		  #{id => kube,      
+		    start => {kube,start,[]}},
+		  #{id => host,      
+		    start => {host_server,start,[]}}
+		 ],
     
     {ok, {SupFlags, ChildSpecs}}.
 

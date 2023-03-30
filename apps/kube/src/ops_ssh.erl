@@ -194,6 +194,7 @@ check_started_node(_N,_Node,true)->
 check_started_node(0,_Node,Boolean) ->
     Boolean;
 check_started_node(N,Node,_) ->
+    io:format("Dbg calling node,Node ~p~n",[{node(),Node,?MODULE,?FUNCTION_NAME}]),
     Boolean=case net_adm:ping(Node) of
 		pang->
 		    timer:sleep(100),

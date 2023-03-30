@@ -1,6 +1,6 @@
--sname dev_main
+-sname dev_kube
 
--setcookie main_cookie
+-setcookie a_cookie
 
 +K true
 +A30
