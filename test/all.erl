@@ -35,8 +35,8 @@ start([Arg1,Arg2])->
 
 
     io:format("End testing  SUCCESS!! ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
-  %  init:stop(),
-  %  timer:sleep(2000),
+    init:stop(),
+    timer:sleep(3000),
     ok.
 %%--------------------------------------------------------------------
 %% @doc
@@ -48,11 +48,21 @@ create_host()->
     pong=rpc:call(?KubeNode,etcd,ping,[]),
     pong=rpc:call(?KubeNode,kube,ping,[]),
     pong=rpc:call(?KubeNode,host_server,ping,[]),
-    X=rpc:call(?KubeNode,host_server,create_node,["c200"],10*1000),
-     io:format("Dbg X ~p~n",[{X,?MODULE,?FUNCTION_NAME}]),
-    
-
+ %   AllHostSpecs=lists:sort(rpc:call(?KubeNode,db_host_spec,get_all_id,[],5000)),
+  %  create_host(AllHostSpecs),
+    create_host(["c201"]),
     ok.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+create_host([])->
+    ok;
+create_host([HostSpec|T]) ->
+    R=rpc:call(?KubeNode,host_server,create_node,[HostSpec],30*1000),
+    io:format("Dbg HostSpec,R ~p~n",[{HostSpec,R,?MODULE,?FUNCTION_NAME}]),
+    create_host(T).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -135,8 +145,12 @@ print(Notice,PreviousNotice)->
 
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    rpc:call(?KubeNode,init,stop,[],5000),
+    timer:sleep(5000),
     []=os:cmd("_build/default/rel/kube/bin/kube daemon"),
     pong=net_adm:ping(?KubeNode),
+    pong=rpc:call(?KubeNode,common,ping,[]),
+    pong=rpc:call(?KubeNode,sd,ping,[]),
     pong=rpc:call(?KubeNode,etcd,ping,[]),
     pong=rpc:call(?KubeNode,kube,ping,[]),
     pong=rpc:call(?KubeNode,host_server,ping,[]),

@@ -13,7 +13,7 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--define(TimeOut,20*1000).
+-define(TimeOut,60*1000).
 %% --------------------------------------------------------------------
 
 %% External exports
@@ -48,27 +48,30 @@ start_nodes([HostSpec|T],CookieStr,Acc) ->
     start_nodes(T,CookieStr,[Result|Acc]).
 
 create_node(HostSpec,CookieStr)->
-    {ok,?MODULE,?LINE}.
-
-create_node(HostSpec,CookieStr,_Tabort)->
     {ok,Node}=db_host_spec:read(connect_node,HostSpec),
     rpc:call(Node,init,stop,[]),
-    timer:sleep(2000),
+    timer:sleep(3000),
     {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+   
+
     {ok,Ip}=db_host_spec:read(local_ip,HostSpec),
     {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
     {ok,Uid}=db_host_spec:read(uid,HostSpec),
     {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
-    
     PaArgs=" ",
-    EnvArgs=" -detached ",
+    EnvArgs=" -setcookie "++ CookieStr++" -detached ",
+
+    io:format("Parameters  ~p~n",[{HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
+				   Ip,SshPort,Uid,Pwd,?MODULE,?FUNCTION_NAME}]),
+    
     Result=case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
 						{Ip,SshPort,Uid,Pwd},?TimeOut],?TimeOut+1000) of
 	       {ok,HostNode}->
 		   {ok,HostNode};
 	       Reason->
 		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create host vm  ",[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,?TimeOut,Reason]]),
-		   {error,[Reason,HostSpec,?MODULE,?FUNCTION_NAME,?LINE,[NodeName,Ip,SshPort,Uid,Pwd,CookieStr]]}
+		   {error,[Reason,HostSpec,?MODULE,?FUNCTION_NAME,?LINE,[NodeName,Ip,SshPort,Uid,Pwd,CookieStr,
+									 PaArgs,EnvArgs]]}
 	   end,
     Result.
 %%--------------------------------------------------------------------

@@ -88,7 +88,9 @@ create(HostName,NodeName,Cookie,PaArgs,EnvArgs,
 		   case check_started_node(100,Node,false) of
 		       false->
 			   rpc:call(Node,init,stop,[],5000),
-			   {error,[{?MODULE,?LINE," ",couldnt_connect,Node}]};
+			   {error,[{?MODULE,?LINE," ",couldnt_connect,node(),erlang:get_cookie(),Node,
+				    HostName,NodeName,Cookie,PaArgs,EnvArgs,
+				    Ip,SshPort,Uid,Pwd}]};
 		       true->
 			   {ok,Node}
 		   end;
@@ -189,12 +191,14 @@ check_stopped_node(N,Node,_) ->
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% -------------------------------------------------------------------	 
-check_started_node(_N,_Node,true)->
+check_started_node(_N,Node,true)->
+    io:format("Dbg calling node,Node ~p~n",[{node(),Node,?MODULE,?FUNCTION_NAME,?LINE}]),
     true;
-check_started_node(0,_Node,Boolean) ->
+check_started_node(0,Node,Boolean) ->
+    io:format("Dbg calling node,Node ~p~n",[{node(),Node,?MODULE,?FUNCTION_NAME,?LINE}]),
     Boolean;
 check_started_node(N,Node,_) ->
-    io:format("Dbg calling node,Node ~p~n",[{node(),Node,?MODULE,?FUNCTION_NAME}]),
+    io:format("Dbg calling node,Node ~p~n",[{node(),Node,?MODULE,?FUNCTION_NAME,?LINE}]),
     Boolean=case net_adm:ping(Node) of
 		pang->
 		    timer:sleep(100),
