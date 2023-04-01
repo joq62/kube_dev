@@ -50,8 +50,7 @@ call(HostSpec,LinuxCmd,TimeOut)->
     {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
     {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
     Result=my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,LinuxCmd,TimeOut),
-    
-    
+        
     Result.
     
 %% --------------------------------------------------------------------

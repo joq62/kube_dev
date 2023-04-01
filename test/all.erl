@@ -46,27 +46,44 @@ start([Arg1,Arg2])->
 %%--------------------------------------------------------------------
 load_start(Appl1,Host1)->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    kuk=ops_ssh:call(Host1,"time",5000),
+    Date=rpc:call(?KubeNode,ops_ssh,call,[Host1,"date",5000],6000),
+    io:format("Date ~p~n",[{Date,?MODULE,?FUNCTION_NAME,?LINE}]),
     
     {ok,Dir}=rpc:call(?KubeNode,db_provider_spec,read,[dir,Appl1],5000),
-    {ok,{CloneM,CloneF,CloneArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[clone_cmd,Appl1],5000),
-    {ok,{TarM,TarF,TarArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[tar_cmd,Appl1],5000),
-    {ok,{StartM,StartF,StartArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[start_cmd,Appl1],5000),
+    {ok,{CloneM,CloneF,[CloneArgs]}}=rpc:call(?KubeNode,db_provider_spec,read,[clone_cmd,Appl1],5000),
+    {ok,{TarM,TarF,[TarArgs]}}=rpc:call(?KubeNode,db_provider_spec,read,[tar_cmd,Appl1],5000),
+    {ok,{StartM,StartF,[StartArgs]}}=rpc:call(?KubeNode,db_provider_spec,read,[start_cmd,Appl1],5000),
    
     rpc:call(?KubeNode,ops_ssh,delete_dir,[Host1,Dir],5000),
     false=rpc:call(?KubeNode,ops_ssh,is_dir,[Host1,Dir],5000),
     timer:sleep(2000),
-    
-    CloneR=rpc:call(?KubeNode,CloneM,CloneF,CloneArgs,5000),
+
+    %%Clone
+    CloneR=rpc:call(?KubeNode,ops_ssh,call,[Host1,CloneArgs,5000],6000),
     io:format("CloneR ~p~n",[{CloneR,?MODULE,?FUNCTION_NAME}]),
-    io:format(" ~p~n",[{CloneM,CloneF,CloneArgs,?MODULE,?FUNCTION_NAME}]),
+    io:format(" ~p~n",[{CloneArgs,?MODULE,?FUNCTION_NAME}]),
     timer:sleep(2000),
     true=rpc:call(?KubeNode,ops_ssh,is_dir,[Host1,Dir],5000),
 
-   
-    
-    
+    %% Tar
+    TarR=rpc:call(?KubeNode,ops_ssh,call,[Host1,TarArgs,5000],6000),
+    io:format("CloneR ~p~n",[{TarR,?MODULE,?FUNCTION_NAME}]),
+    io:format(" ~p~n",[{TarArgs,?MODULE,?FUNCTION_NAME}]),
+    timer:sleep(2000),
 
+    %%Start
+    {ok,NodeName}=rpc:call(?KubeNode,db_provider_spec,read,[node_name,Appl1],5000),
+    DistNode=list_to_atom(NodeName++"@"++Host1),
+    kuk=DistNode,
+    
+    StartR=rpc:call(?KubeNode,ops_ssh,call,[Host1,StartArgs,5000],6000),
+    io:format("CloneR ~p~n",[{StartR,?MODULE,?FUNCTION_NAME}]),
+    io:format(" ~p~n",[{StartArgs,?MODULE,?FUNCTION_NAME}]),
+   
+    %%Check dis
+  
+    pong=net_adm:ping(DistNode),
+    
     ok.
 %%--------------------------------------------------------------------
 %% @doc
