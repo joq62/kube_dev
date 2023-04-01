@@ -19,7 +19,10 @@
 %-compile(export_all).
 -export([
 	 create_dir/2,
-	 delete_dir/2	 
+	 delete_dir/2,
+	 call/3,
+	 is_dir/2	 
+	 
 	]).
 	 	 
 -export([
@@ -27,9 +30,7 @@
 	 delete/2,
 	 create/5,
 	 create/6,
-	 create/7,
-
-	 is_dir/2
+	 create/7
 	]).
 	 
 
@@ -43,7 +44,16 @@
 %% Description: Initiate the eunit tests, set upp needed processes etc
 %% Returns: non
 %% -------------------------------------------------------------------	 
-
+call(HostSpec,LinuxCmd,TimeOut)->
+    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+    Result=my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,LinuxCmd,TimeOut),
+    
+    
+    Result.
+    
 %% --------------------------------------------------------------------
 %% Function:start/0 
 %% Description: Initiate the eunit tests, set upp needed processes etc
@@ -80,20 +90,21 @@ create(HostName,NodeName,Cookie,PaArgs,EnvArgs,
     true=check_stopped_node(100,Node,false),
     Args=PaArgs++" "++"-setcookie "++Cookie++" "++EnvArgs,
     Msg="erl -sname "++NodeName++" "++Args++" ",
-    Result=case rpc:call(node(),my_ssh,ssh_send,[Ip,SshPort,Uid,Pwd,Msg,TimeOut],TimeOut-1000) of
+    Result=case rpc:call(node(),my_ssh,ssh_send,[Ip,SshPort,Uid,Pwd,Msg,TimeOut],TimeOut+1000) of
 	       % {badrpc,timeout}-> retry X times       
 	       {badrpc,Reason}->
 		   {error,[{?MODULE,?LINE," ",badrpc,Reason}]};
 	       ok->
-		   case check_started_node(100,Node,false) of
-		       false->
-			   rpc:call(Node,init,stop,[],5000),
-			   {error,[{?MODULE,?LINE," ",couldnt_connect,node(),erlang:get_cookie(),Node,
-				    HostName,NodeName,Cookie,PaArgs,EnvArgs,
-				    Ip,SshPort,Uid,Pwd}]};
-		       true->
-			   {ok,Node}
-		   end;
+		   {Node,rpc:call(Node,erlang,get_cookie,[],5000)};
+		  % case check_started_node(100,Node,false) of
+		   %    false->
+		%	   rpc:call(Node,init,stop,[],5000),
+		%	   {error,[{?MODULE,?LINE," ",couldnt_connect,node(),erlang:get_cookie(),Node,
+		%		    HostName,NodeName,Cookie,PaArgs,EnvArgs,
+		%		    Ip,SshPort,Uid,Pwd}]};
+		 %      true->
+		%	   {ok,Node}
+		 %  end;
 	       Error ->
 		     {error,[unmatched_signal,Error,?MODULE,?LINE]}
 	   end,

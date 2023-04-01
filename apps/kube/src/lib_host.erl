@@ -59,13 +59,11 @@ create_node(HostSpec,CookieStr)->
     {ok,Uid}=db_host_spec:read(uid,HostSpec),
     {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
     PaArgs=" ",
-    EnvArgs=" -setcookie "++ CookieStr++" -detached ",
-
-    io:format("Parameters  ~p~n",[{HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
-				   Ip,SshPort,Uid,Pwd,?MODULE,?FUNCTION_NAME}]),
-    
+    EnvArgs=" -detached ",
     Result=case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
 						{Ip,SshPort,Uid,Pwd},?TimeOut],?TimeOut+1000) of
+   % Result=case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
+%						{Ip,SshPort,Uid,Pwd},?TimeOut],?TimeOut+1000) of
 	       {ok,HostNode}->
 		   {ok,HostNode};
 	       Reason->

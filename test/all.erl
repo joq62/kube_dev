@@ -16,7 +16,8 @@
 
 
 -define(KubeNode,'dev_kube@c50').
-
+-define(Host1,"c201").
+-define(Appl1,"kube").
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
@@ -30,14 +31,65 @@ start([Arg1,Arg2])->
     io:format("Start ~p~n",[{Arg1,Arg2,?MODULE,?FUNCTION_NAME}]),
 
     ok=setup(),
-    ok=create_host(),
-    
-
+ %   ok=ssh_test(),
+    ok=load_start(?Appl1,?Host1),
 
     io:format("End testing  SUCCESS!! ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     init:stop(),
     timer:sleep(3000),
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+load_start(Appl1,Host1)->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    kuk=ops_ssh:call(Host1,"time",5000),
+    
+    {ok,Dir}=rpc:call(?KubeNode,db_provider_spec,read,[dir,Appl1],5000),
+    {ok,{CloneM,CloneF,CloneArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[clone_cmd,Appl1],5000),
+    {ok,{TarM,TarF,TarArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[tar_cmd,Appl1],5000),
+    {ok,{StartM,StartF,StartArgs}}=rpc:call(?KubeNode,db_provider_spec,read,[start_cmd,Appl1],5000),
+   
+    rpc:call(?KubeNode,ops_ssh,delete_dir,[Host1,Dir],5000),
+    false=rpc:call(?KubeNode,ops_ssh,is_dir,[Host1,Dir],5000),
+    timer:sleep(2000),
+    
+    CloneR=rpc:call(?KubeNode,CloneM,CloneF,CloneArgs,5000),
+    io:format("CloneR ~p~n",[{CloneR,?MODULE,?FUNCTION_NAME}]),
+    io:format(" ~p~n",[{CloneM,CloneF,CloneArgs,?MODULE,?FUNCTION_NAME}]),
+    timer:sleep(2000),
+    true=rpc:call(?KubeNode,ops_ssh,is_dir,[Host1,Dir],5000),
+
+   
+    
+    
+
+    ok.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+
+
+ssh_test()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
+    Dir="test_dir_tabort",
+    rpc:call(?KubeNode,ops_ssh,delete_dir,[?Host1,Dir],5000),
+    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
+    rpc:call(?KubeNode,ops_ssh,create_dir,[?Host1,Dir],5000),
+    timer:sleep(2000),
+    true=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
+    rpc:call(?KubeNode,ops_ssh,delete_dir,[?Host1,Dir],5000),
+    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
+    
+    
+    ok.
+
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -134,15 +186,6 @@ print(Notice,PreviousNotice)->
 %% Description: Based on hosts.config file checks which hosts are avaible
 %% Returns: List({HostId,Ip,SshPort,Uid,Pwd}
 %% --------------------------------------------------------------------
-
-%% --------------------------------------------------------------------
-%% Function: available_hosts()
-%% Description: Based on hosts.config file checks which hosts are avaible
-%% Returns: List({HostId,Ip,SshPort,Uid,Pwd}
-%% --------------------------------------------------------------------
--define(LocalTypes,[oam,nodelog,db_etcd]).
--define(TargetTypes,[oam,nodelog,db_etcd]).
-
 setup()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     rpc:call(?KubeNode,init,stop,[],5000),
