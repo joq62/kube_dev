@@ -30,6 +30,12 @@ init([]) ->
                  intensity => 0,
                  period => 1},
     ChildSpecs = [
+		  #{id => common,      
+		    start => {common,start,[]}},
+		  #{id => sd,      
+		    start => {sd,start,[]}},
+		  #{id => etcd,      
+		    start => {etcd_server,start,[]}},
 		  #{id => kube,      
 		    start => {kube,start,[]}},
 		  #{id => host,      

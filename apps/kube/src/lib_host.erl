@@ -13,19 +13,20 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
--define(TimeOut,60*1000).
+-define(TimeOut,30*1000).
+
+-include_lib("kernel/include/inet.hrl").
 %% --------------------------------------------------------------------
 
 %% External exports
 -export([
 	 start_nodes/2,
 	 create_node/2,
-
-
-	 create_node/1,
-	 active_nodes/1,
-	 stopped_nodes/1
-
+	 create_node/5,
+	 active_nodes/0,
+	 active/1,
+	 stopped_nodes/0,
+	 stopped/1
 	]).
 
 
@@ -48,130 +49,79 @@ start_nodes([HostSpec|T],CookieStr,Acc) ->
     start_nodes(T,CookieStr,[Result|Acc]).
 
 create_node(HostSpec,CookieStr)->
+     PaArgs=" ",
+    EnvArgs="  ",
     {ok,Node}=db_host_spec:read(connect_node,HostSpec),
     rpc:call(Node,init,stop,[]),
     timer:sleep(3000),
     {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
-   
+    create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs).
 
+create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
     {ok,Ip}=db_host_spec:read(local_ip,HostSpec),
     {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
     {ok,Uid}=db_host_spec:read(uid,HostSpec),
     {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
-    PaArgs=" ",
-    EnvArgs=" -detached ",
-    Result=case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
-						{Ip,SshPort,Uid,Pwd},?TimeOut],?TimeOut+1000) of
-   % Result=case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,
-%						{Ip,SshPort,Uid,Pwd},?TimeOut],?TimeOut+1000) of
-	       {ok,HostNode}->
-		   {ok,HostNode};
-	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create host vm  ",[HostSpec,NodeName,CookieStr,PaArgs,EnvArgs,?TimeOut,Reason]]),
-		   {error,[Reason,HostSpec,?MODULE,?FUNCTION_NAME,?LINE,[NodeName,Ip,SshPort,Uid,Pwd,CookieStr,
-									 PaArgs,EnvArgs]]}
-	   end,
-    Result.
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-active_nodes(ClusterSpec)->
-    AllNodes= sd:call(etcd,db_parent_desired_state,pods,[ClusterSpec],5000),
-    RunningNodes=[Node||Node<-AllNodes,
-			pong==net_adm:ping(Node)],
-    Result=case sd:call(etcd,db_cluster_spec,read,[root_dir,ClusterSpec],5000) of
-	       {ok,RootDir}->	
-		   ActiveNodes=[Node||Node<-RunningNodes,
-				      rpc:call(Node,filelib,is_dir,[RootDir],5000)],
-		   [rpc:call(Node,init,stop,[],3000)||Node<-RunningNodes,
-						      false==lists:member(Node,ActiveNodes)],
-		   {ok,ActiveNodes};
-	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get root dir",[ClusterSpec,Reason]]),
-		   {error,Reason}
-	   end,
-    Result.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-stopped_nodes(ClusterSpec)->
-    AllNodes= sd:call(etcd,db_parent_desired_state,pods,[ClusterSpec],5000),
-    Result=case active_nodes(ClusterSpec) of
-	       {ok,ActiveNodes}->		 
-		   StoppedNodes=[Node||Node<-AllNodes,
-				       false==lists:member(Node,ActiveNodes)],
-		   {ok,StoppedNodes};
-	       Reason->
-		    sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get active nodes ",[ClusterSpec,Reason]]),
-		   {error,Reason}
-	   end,
-    Result.
-    
-    
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-create_node(ParentNode)->
- %   sd:cast(nodelog,nodelog,log,[notice,?MODULE_STRING,?LINE,["DBG: create_node ParentNode : ",ParentNode,?MODULE,?LINE]]),
-    Result=case sd:call(etcd,db_parent_desired_state,read,[host_spec,ParentNode],5000) of
-	       {ok,HostSpec}->
-		   case sd:call(etcd,db_parent_desired_state,read,[node_name,ParentNode],5000) of
-		       {ok,NodeName}->
-			   case sd:call(etcd,db_parent_desired_state,read,[cluster_spec,ParentNode],5000) of
-			       {ok,ClusterSpec}-> 
-				   case sd:call(etcd,db_cluster_spec,read,[cookie,ClusterSpec],5000) of
-				       {ok,Cookie}->
-					   EnvArgs=" -detached ",
-					   PaArgs=" ",
-					   TimeOut=10*1000,
-					   case rpc:call(node(),ops_ssh,create,[HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut],TimeOut+1000) of
-					       {ok,ParentNode}->
-						   case rpc:call(ParentNode,file,del_dir_r,[ClusterSpec],10*1000) of
-						       ok->
-							   case rpc:call(ParentNode,file,make_dir,[ClusterSpec],10*1000) of
-							       ok->
-								   ok;
-							       Reason->
-								   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to make dir  ",[ClusterSpec,ParentNode,Reason]]),
-								   {error,Reason}
-							   end;
-						       Reason->
-							   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to delete dir  ",[ClusterSpec,ParentNode,Reason]]),
-							   {error,Reason}
-						   end;
-					       Reason->
-						   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to create vm  ",[ParentNode,HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut,Reason]]),
-						   {error,Reason}
-					   end;   
-				       Reason->
-					   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cookie   ",[ParentNode,Reason]]),
-					   {error,Reason}
-				   end;
-			       Reason->
-				   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get cluster spec   ",[ParentNode,Reason]]),
-				   {error,Reason}
-			   end;
-		       Reason->
-			   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get node name   ",[ParentNode,Reason]]),
-		   {error,Reason}
+    ErlCmd="nohup erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++"&",
+    {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+    Node=list_to_atom(NodeName++"@"++HostName),
+    CreateResult={my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,ErlCmd,?TimeOut),Node,HostSpec},
+    %% connect
+    Result=case CreateResult of
+	       {ok,Node,_}->
+		   case net_adm:ping(Node) of
+		       pang->
+			   {error,["Failed to connect ",Node,HostSpec]};
+		       pong->
+			   {ok,Node,HostSpec}
 		   end;
 	       Reason->
-		   sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Failed to get host spec   ",[ParentNode,Reason]]),
-		   sd:cast(nodelog,nodelog,log,[warning,?MODULE_STRING,?LINE,["Error: ,db_parent_desired_state,read,[host_spec,ParentNode: ",Reason,ParentNode,?MODULE,?LINE]]),
-		   {error,Reason}
-	   end,
-    Result.    
+		   {error,["Failed to create vm ",Reason,Node,HostSpec]}
+	   end,   
+    
+  %  io:format("Result ~p~n",[{Result,?MODULE,?FUNCTION_NAME,?LINE}]),
+    Result.
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
+active_nodes()->
+    [HostSpec||HostSpec<-db_host_spec:get_all_id(),
+	       true==active(HostSpec)].
 
+active(HostSpec)->
+    Result=case db_host_spec:read(connect_node,HostSpec) of
+	       {error,Reason}->
+		   {error,["Failed to read connect_node ",HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+	       {ok,Node}->
+		   case net_adm:ping(Node) of
+		       pang->
+			   false;
+		       pong->
+			   true
+		   end
+	   end,
+    Result.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+stopped_nodes()->
+    [HostSpec||HostSpec<-db_host_spec:get_all_id(),
+	       true==stopped(HostSpec)].
+
+stopped(HostSpec)->
+    Result=case db_host_spec:read(connect_node,HostSpec) of
+	       {error,Reason}->
+		   {error,["Failed to read connect_node ",HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+	       {ok,Node}->
+		   case net_adm:ping(Node) of
+		       pang->
+			   true;
+		       pong->
+			   false
+		   end
+	   end,
+    Result.

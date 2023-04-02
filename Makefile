@@ -58,4 +58,4 @@ eunit:
 	rm -rf test_ebin;
 	mkdir test_ebin;
 	erlc -o test_ebin test/*.erl;
-	erl -pa test_ebin -sname do_test -run $(m) start $(a) $(b) -setcookie $(c)
+	erl -pa _build/default/lib/*/* -pa test_ebin -sname do_test -run $(m) start $(a) $(b) -setcookie $(c)
