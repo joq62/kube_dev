@@ -62,7 +62,7 @@ create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
     {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
     {ok,Uid}=db_host_spec:read(uid,HostSpec),
     {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
-    ErlCmd="nohup erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++"&",
+    ErlCmd="erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++" -detached",
     {ok,HostName}=db_host_spec:read(hostname,HostSpec),
     Node=list_to_atom(NodeName++"@"++HostName),
     CreateResult={my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,ErlCmd,?TimeOut),Node,HostSpec},

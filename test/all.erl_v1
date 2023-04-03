@@ -18,8 +18,8 @@
 
 
 -define(KubeNode,node()).
--define(HostSpec1,"c200").
--define(Provider1,"kube").
+-define(Host1,"c200").
+-define(Appl1,"kube").
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
@@ -34,8 +34,9 @@ start([Arg1,Arg2])->
 
     ok=setup(),
     ok=create_vms(),
-    {ok,ProviderNode,App}=lib_kube:load(?Provider1,?HostSpec1),
-    ok=lib_kube:start(?Provider1,?HostSpec1),
+    {ok,ProviderNode,App}=load(?Appl1,?Host1),
+    io:format("Loaded apps on ProviderNode ~p~n",[{ProviderNode,App,rpc:call(ProviderNode,application,loaded_applications,[],5000),?MODULE,?FUNCTION_NAME}]),
+    ok=start_provider(ProviderNode,App),
     pong=rpc:call(ProviderNode,App,ping,[],5000),
  %   ok=ssh_test(),
 
@@ -60,7 +61,6 @@ create_vms()->
     io:format("active ~p~n",[{lib_host:active_nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
     io:format("stopped ~p~n",[{lib_host:stopped_nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
     ok.
-   
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -68,6 +68,97 @@ create_vms()->
 %% @end
 %%--------------------------------------------------------------------
 
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+load(Provider,HostSpec)->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    ProviderExists=db_provider_spec:member(Provider),
+    HostSpecExists=db_host_spec:member(HostSpec),
+    Result=case {ProviderExists,HostSpecExists} of
+	       {false,_}->
+		   {error,["eexists ",{ProviderExists,Provider},{HostSpecExists,HostSpec}]};
+	       {_,false}->
+		   {error,["eexists ",{ProviderExists,Provider},{HostSpecExists,HostSpec}]};
+	       {true,true}->
+		   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),
+		   %% 
+		   {ok,ProviderDir}=db_provider_spec:read(dir,Provider),
+		   {ok,TarFile}=db_provider_spec:read(tar_file,Provider),
+		   case rpc:call(HostNode,file,del_dir_r,[ProviderDir],5000) of
+		       {badrpc,Reason}->
+			   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+		       {error,Reason}->
+			   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+		       _ ->
+			   {ok,GitPath}=db_provider_spec:read(git_path,Provider),
+			   case rpc:call(HostNode,os,cmd,["git clone "++GitPath],20*1000) of
+			       {badrpc,Reason}->
+				   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+			       {error,Reason}->
+				   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+			       _->
+				   {ok,TarCmd}=db_provider_spec:read(tar_cmd,Provider),
+				   case rpc:call(HostNode,os,cmd,[TarCmd],20*1000) of
+				       {badrpc,Reason}->
+					   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+				       {error,Reason}->
+					   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+				       _->
+					   %% start slave
+					   {ok,ProviderNodeName}=db_provider_spec:read(node_name,Provider),
+					   {ok,CookieStr}=db_provider_spec:read(cookie,Provider),
+					   {ok,PaArgs}=db_provider_spec:read(pa_args,Provider),
+					   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+					   Args=PaArgs++" "++"-setcookie "++CookieStr,
+					   io:format(" ~p~n",[{HostName,ProviderNodeName,Args,?MODULE,?LINE}]),
+					   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
+					   rpc:call(ProviderNode,init,stop,[],5000),
+					   timer:sleep(3000),
+					   EnvArgs=" ",
+					   case lib_host:create_node(HostSpec,ProviderNodeName,CookieStr,PaArgs,EnvArgs) of
+					       {error,Reason}->
+						   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+					       {ok,ProviderNode,HostSpec}->
+						   TarFilewPath=filename:join(ProviderDir,TarFile),
+						   TestDir=filename:join(ProviderDir,"test"),
+						   Releases=filename:join(ProviderDir,"releases"),
+						   R1=rpc:call(HostNode,file,delete,[TarFilewPath],5000),
+						   R2=rpc:call(HostNode,file,del_dir_r,[TestDir],5000),
+						   R3=rpc:call(HostNode,file,del_dir_r,[Releases],5000),
+						   case {R1,R2,R3} of
+						       {ok,ok,ok}->
+							   {ok,App}=db_provider_spec:read(app,Provider),
+							   case rpc:call(ProviderNode,code,is_loaded,[App],10*1000)of
+							       {badrpc,Reason}->
+								   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+							       {file,_}->
+								   {error,["Already loaded",App,?MODULE,?FUNCTION_NAME,?LINE]};
+							       false->
+								   case rpc:call(ProviderNode,application,load,[App],10*1000)of
+								       {badrpc,Reason}->
+									   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+								       {error,Reason}->
+									   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+								       ok->
+									   
+									   {file,_}=rpc:call(ProviderNode,application,start,[App],10*1000),
+									   {ok,ProviderNode,App}
+								   end
+							   end;
+						       _ ->
+							   {error,["Failed to load, ",R1,R2,R3,?MODULE,?LINE]}
+						   end
+					   end
+				   end
+			   end
+		   end
+	   end,
+    io:format("Load result  ~p~n",[{Result,?MODULE,?FUNCTION_NAME}]),
+    Result.
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -75,20 +166,22 @@ create_vms()->
 %% @end
 %%--------------------------------------------------------------------
 start_provider(ProviderNode,App)->
-    Result=case [App||{WApp,_,_}<-rpc:call(ProviderNode,application,loaded_applications,[],10*1000),
-		      WApp==App] of
-	       []->
-		   {error,["Failed to load ",App,?MODULE,?FUNCTION_NAME,?LINE]};
-	       [App]->	  
-		   case rpc:call(ProviderNode,application,start,[App],30*1000)of
-		       {badrpc,Reason}->
-			   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
-		       {error,Reason}->
-			   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
-		       ok->
-			   ok
-		   end
-	   end,
+     Result=case rpc:call(ProviderNode,code,is_loaded,[App],10*1000)of
+		{badrpc,Reason}->
+		    {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+		false->
+		    {error,["Not loadede ",App,?MODULE,?FUNCTION_NAME,?LINE]};
+		{file,_}->
+		    kuk=App,
+		    case rpc:call(ProviderNode,application,ensure_all_started,[App],30*1000)of
+			{badrpc,Reason}->
+			    {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+			{error,Reason}->
+			    {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+			ok->
+			    ok
+		    end
+	    end,
     Result.
 %%--------------------------------------------------------------------
 %% @doc
@@ -100,13 +193,13 @@ start_provider(ProviderNode,App)->
 ssh_test()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     Dir="test_dir_tabort",
-    rpc:call(?KubeNode,ops_ssh,delete_dir,[?HostSpec1,Dir],5000),
-    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?HostSpec1,Dir],5000),
-    rpc:call(?KubeNode,ops_ssh,create_dir,[?HostSpec1,Dir],5000),
+    rpc:call(?KubeNode,ops_ssh,delete_dir,[?Host1,Dir],5000),
+    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
+    rpc:call(?KubeNode,ops_ssh,create_dir,[?Host1,Dir],5000),
     timer:sleep(2000),
-    true=rpc:call(?KubeNode,ops_ssh,is_dir,[?HostSpec1,Dir],5000),
-    rpc:call(?KubeNode,ops_ssh,delete_dir,[?HostSpec1,Dir],5000),
-    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?HostSpec1,Dir],5000),
+    true=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
+    rpc:call(?KubeNode,ops_ssh,delete_dir,[?Host1,Dir],5000),
+    false=rpc:call(?KubeNode,ops_ssh,is_dir,[?Host1,Dir],5000),
 
     ok.
 
