@@ -12,6 +12,11 @@
 
 %% API
 -export([
+	 %% host controller
+	 start_host_controller/1,
+	 is_started_host_controller/1,
+	 
+	 %% provider 
 	 ping/0
 
 	]).
@@ -31,6 +36,21 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_host_controller(HostSpec) ->
+    gen_server:call(?SERVER, {start_host_controller,HostSpec},infinity).
+stop_host_controller(HostSpec) ->
+    gen_server:call(?SERVER, {stop_host_controller,HostSpec},infinity).
+
+is_started_host_controller(HostSpec) ->
+    gen_server:call(?SERVER, {is_started_host_controller,HostSpec},infinity).
+
 
 %%--------------------------------------------------------------------
 %% @doc

@@ -166,7 +166,7 @@ ssh_start_nodes([HostSpec|T],CookieStr,Acc) ->
     ssh_start_nodes(T,CookieStr,[Result|Acc]).
 
 ssh_create_node(HostSpec,CookieStr)->
-     PaArgs=" ",
+    PaArgs=" ",
     EnvArgs="  ",
     {ok,Node}=db_host_spec:read(connect_node,HostSpec),
     rpc:call(Node,init,stop,[]),

@@ -19,14 +19,19 @@
 -define(HeartbeatTime,20*1000).
 
  -define(CookieStr,"a_cookie").
-
+-define(SERVER,?MODULE).
 %% External exports
 
-
+-export([
+	 start_controller/1,
+	 stop_controller/1,
+	 is_started_controller/1
+	]).
 
 
 
 -export([
+	 
 	 start_nodes/0,
 	 create_node/1,
 	 desired_nodes/0,
@@ -61,6 +66,18 @@
 %% ====================================================================
 %% External functions
 %% ====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_controller(HostSpec) ->
+    gen_server:call(?SERVER, {start_controller,HostSpec},infinity).
+stop_controller(HostSpec) ->
+    gen_server:call(?SERVER, {stop_controller,HostSpec},infinity).
+
+is_started_controller(HostSpec) ->
+    gen_server:call(?SERVER, {is_started_controller,HostSpec},infinity).
 
 	    
 %% call
@@ -119,6 +136,24 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+
+handle_call({start_controller,HostSpec},_From, State) ->
+    {ok,Node}=db_host_spec:read(connect_node,HostSpec),
+    rpc:call(Node,init,stop,[]),
+    timer:sleep(3000),
+    PaArgs=" ",
+    EnvArgs="  ",
+    CookieStr=State#state.cookie_str,
+    {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+    Reply=lib_kube:ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs),
+    {reply, Reply, State};
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+
 handle_call({start_nodes},_From, State) ->
     Reply=lib_host:start_nodes(State#state.all_hosts,State#state.cookie_str),
     {reply, Reply, State};

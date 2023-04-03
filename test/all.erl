@@ -69,34 +69,6 @@ create_vms()->
 %%--------------------------------------------------------------------
 
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-start_provider(ProviderNode,App)->
-    Result=case [App||{WApp,_,_}<-rpc:call(ProviderNode,application,loaded_applications,[],10*1000),
-		      WApp==App] of
-	       []->
-		   {error,["Failed to load ",App,?MODULE,?FUNCTION_NAME,?LINE]};
-	       [App]->	  
-		   case rpc:call(ProviderNode,application,start,[App],30*1000)of
-		       {badrpc,Reason}->
-			   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
-		       {error,Reason}->
-			   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
-		       ok->
-			   ok
-		   end
-	   end,
-    Result.
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-
-
 ssh_test()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     Dir="test_dir_tabort",
