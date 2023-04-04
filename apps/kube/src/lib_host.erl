@@ -19,6 +19,20 @@
 %% --------------------------------------------------------------------
 
 %% External exports
+
+-export([
+	 start_host_controller/1,
+	 stop_host_controller/1,
+	 is_started_host_controller/1
+	]).
+
+-export([
+	 ssh_start_nodes/2,
+	 ssh_create_node/2,
+	 ssh_create_node/5
+	]).
+
+
 -export([
 	 start_nodes/2,
 	 create_node/2,
@@ -33,6 +47,116 @@
 %% ====================================================================
 %% External functions
 %% ====================================================================
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+start_host_controller(HostSpec)->
+    Result=case db_host_spec:member(HostSpec) of
+	       false->
+		   {error,["eexists ",HostSpec]};
+	       true->
+		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   rpc:call(HostControllerNode,init,stop,[],5000),
+		   case vm:check_stopped_node(HostControllerNode) of
+		       false->
+			   {error,["Failed to stop host controller node ",HostControllerNode,?MODULE,?FUNCTION_NAME,?LINE]};
+		       true->
+			   PaArgs=" ",
+			   EnvArgs="  ",
+			   CookieStr=atom_to_list(erlang:get_cookie()),
+			   {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+			   ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)
+		   end
+	   end,
+    Result.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+stop_host_controller(HostSpec)->
+    Result=case db_host_spec:member(HostSpec) of
+	       false->
+		   {error,["eexists ",HostSpec]};
+	       true->
+		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   rpc:call(HostControllerNode,init,stop,[],5000),
+		   case vm:check_stopped_node(HostControllerNode) of
+		       false->
+			   {error,["Failed to stop host controller node ",HostControllerNode,?MODULE,?FUNCTION_NAME,?LINE]};
+		       true->
+			   ok
+		   end
+	   end,
+    Result.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+is_started_host_controller(HostSpec)->
+    Result=case db_host_spec:member(HostSpec) of
+	       false->
+		   {error,["eexists ",HostSpec]};
+	       true->
+		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   case net_adm:ping(HostControllerNode) of
+		       pang->
+			   false;
+		       pong->
+			   true
+		   end
+	   end,
+    Result.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+ssh_start_nodes(HostSpecs,CookieStr)->
+    ssh_start_nodes(HostSpecs,CookieStr,[]).
+
+ssh_start_nodes([],_,Acc)->
+    Acc;
+ssh_start_nodes([HostSpec|T],CookieStr,Acc) ->
+    Result=ssh_create_node(HostSpec,CookieStr),
+    ssh_start_nodes(T,CookieStr,[Result|Acc]).
+
+ssh_create_node(HostSpec,CookieStr)->
+    PaArgs=" ",
+    EnvArgs="  ",
+    {ok,Node}=db_host_spec:read(connect_node,HostSpec),
+    rpc:call(Node,init,stop,[]),
+    timer:sleep(3000),
+    {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+    ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs).
+
+ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
+    {ok,Ip}=db_host_spec:read(local_ip,HostSpec),
+    {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
+    {ok,Uid}=db_host_spec:read(uid,HostSpec),
+    {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
+    ErlCmd="erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++" -detached",
+    {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+    Node=list_to_atom(NodeName++"@"++HostName),
+    CreateResult={my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,ErlCmd,?TimeOut),Node,HostSpec},
+    %% connect
+    Result=case CreateResult of
+	       {ok,Node,_}->
+		   case net_adm:ping(Node) of
+		       pang->
+			   {error,["Failed to connect ",Node,HostSpec]};
+		       pong->
+			   {ok,Node,HostSpec}
+		   end;
+	       Reason->
+		   {error,["Failed to create vm ",Reason,Node,HostSpec]}
+	   end,   
+    Result.
 
 %%--------------------------------------------------------------------
 %% @doc

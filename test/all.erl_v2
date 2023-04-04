@@ -20,8 +20,6 @@
 -define(KubeNode,node()).
 -define(HostSpec1,"c200").
 -define(Provider1,"kube").
-
-
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
@@ -35,15 +33,10 @@ start([Arg1,Arg2])->
     io:format("Start ~p~n",[{Arg1,Arg2,?MODULE,?FUNCTION_NAME}]),
 
     ok=setup(),
-    ok=create_controllers(),
-    ok=load(),
-    ok=start_providers(),
-    ok=stop_provider(),
-    ok=unload(),
-    
- %   {ok,ProviderNode,App}=lib_kube:load(?Provider1,?HostSpec1),
- %   ok=lib_kube:start(?Provider1,?HostSpec1),
- %   pong=rpc:call(ProviderNode,App,ping,[],5000),
+    ok=create_vms(),
+    {ok,ProviderNode,App}=lib_kube:load(?Provider1,?HostSpec1),
+    ok=lib_kube:start(?Provider1,?HostSpec1),
+    pong=rpc:call(ProviderNode,App,ping,[],5000),
  %   ok=ssh_test(),
 
     io:format("End testing  SUCCESS!! ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
@@ -56,160 +49,19 @@ start([Arg1,Arg2])->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-unload()->
+create_vms()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
-    UnLoadR=[unload(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
-    
-  [
-   {error,["Failed to unload app",badrpc,kube,"kube","c100",nodedown,lib_provider,unload,_]},
-   {ok,"kube","c200"},
-   {ok,"kube","c201"},
-   {error,["Failed to unload app",badrpc,kube,"kube","c202",nodedown,lib_provider,unload,_]},
-   {error,["Failed to unload app",badrpc,kube,"kube","c300",nodedown,lib_provider,unload,_]},
-   {error,["Failed to unload app",badrpc,kube,"kube","c50",nodedown,lib_provider,unload,_]}
-  ]=UnLoadR,
-     
-   %  io:format("LoadR ~p~n",[{LoadR,?MODULE,?FUNCTION_NAME}]),
-
-    ok.
-    
-unload(ProviderSpec,HostSpec)->
-    Result=case kube:unload_provider(ProviderSpec,HostSpec) of
-	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {error,Reason};
-	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {ok,ProviderSpec,HostSpec}
-	   end,
-    Result.
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-stop_provider()->
-      io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
-    StopR=[stop_provider(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
-    [
-     {error,["Already stopped provider ","kube","c100"]},
-     {ok,"kube","c200"},
-     {ok,"kube","c201"},
-     {error,["Already stopped provider ","kube","c202"]},
-     {error,["Already stopped provider ","kube","c300"]},
-     {error,["Already stopped provider ","kube","c50"]}
-    ]=StopR,
-
-    ok.
-stop_provider(ProviderSpec,HostSpec)->
-    Result=case kube:stop_provider(ProviderSpec,HostSpec) of
-	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {error,Reason};
-	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {ok,ProviderSpec,HostSpec}
-	   end,
-    Result.
-
-
-
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-start_providers()->
-    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
-    StartR=[start_provider(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
-    
-    [{error,["Not loaded  ",kube,lib_provider,start,_]},
-     {ok,"kube","c200"},
-     {ok,"kube","c201"},
-     {error,["Not loaded  ",kube,lib_provider,start,_]},
-     {error,["Not loaded  ",kube,lib_provider,start,_]},
-     {error,["Not loaded  ",kube,lib_provider,start,_]}
-    ]=StartR,
-
-    ok.
-start_provider(ProviderSpec,HostSpec)->
-    Result=case kube:start_provider(ProviderSpec,HostSpec) of
-	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {error,Reason};
-	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {ok,ProviderSpec,HostSpec}
-	   end,
-    Result.
-
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-load()->
-    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
-    LoadR=[load(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
-
-    [{error,[badrpc,nodedown,lib_provider,load,_]},
-      {ok,kube@c200,kube},
-      {ok,kube@c201,kube},
-      {error,[badrpc,nodedown,lib_provider,load,_]},
-      {error,[badrpc,nodedown,lib_provider,load,_]},
-      {error,[badrpc,nodedown,lib_provider,load,_]}
-    ]=LoadR,
-     
-   %  io:format("LoadR ~p~n",[{LoadR,?MODULE,?FUNCTION_NAME}]),
-
-    ok.
-    
-    
-
-load(ProviderSpec,HostSpec)->
-    Result=case kube:load_provider(ProviderSpec,HostSpec) of
-	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {error,Reason};
-	       {ok,ProviderNode,App}->
-		   io:format("Ok ~p~n",[{ProviderNode,App,?MODULE,?FUNCTION_NAME,?LINE}]),
-		  {ok,ProviderNode,App}
-	   end,
-    Result.
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-create_controllers()->
-    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
-    _StartR=[create_controller(HostSpec)||HostSpec<-AllHostSpecs],
-    Started=[HostSpec||HostSpec<-AllHostSpecs,
-		  kube:is_started_host_controller(HostSpec)],
-    ["c200","c201"]=Started,
+    CookieStr=atom_to_list(erlang:get_cookie()),
+    R2=lib_host:start_nodes(AllHostSpecs,CookieStr),
+    io:format("R2 ~p~n",[{R2,?MODULE,?FUNCTION_NAME,?LINE}]),
     io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
-     
+    
+    io:format("active ~p~n",[{lib_host:active_nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
+    io:format("stopped ~p~n",[{lib_host:stopped_nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
     ok.
    
-create_controller(HostSpec)->
-    Result=case kube:start_host_controller(HostSpec) of
-	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {error,Reason};
-	       {ok,Node,HostSpec}->
-		   io:format("Ok ~p~n",[{HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
-		   {ok,Node,HostSpec}
-	   end,
-    Result.
-	    
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
@@ -335,7 +187,20 @@ setup()->
     pong=common:ping(), 
     pong=sd:ping(),
     pong=etcd:ping(),
+    pong=host_server:ping(),
+    ok.
 
-    []=[{error,[HostSpec]}||HostSpec<-lists:sort(db_host_spec:get_all_id()),
-			       ok/=kube:stop_host_controller(HostSpec)],
+
+setup_2()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+   
+    timer:sleep(5000),
+    []=os:cmd("_build/default/rel/kube/bin/kube daemon"),
+    pong=net_adm:ping(?KubeNode),
+    pong=rpc:call(?KubeNode,common,ping,[]),
+    pong=rpc:call(?KubeNode,sd,ping,[]),
+    pong=rpc:call(?KubeNode,etcd,ping,[]),
+    pong=rpc:call(?KubeNode,kube,ping,[]),
+    pong=rpc:call(?KubeNode,host_server,ping,[]),
+    
     ok.

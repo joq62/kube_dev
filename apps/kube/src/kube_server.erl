@@ -61,6 +61,61 @@ init([]) ->
 %%          {stop, Reason, Reply, State}   | (terminate/2 is called)
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+handle_call({load_provider,ProviderSpec,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_provider,load,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({start_provider,ProviderSpec,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_provider,start,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({stop_provider,ProviderSpec,HostSpec},_From, State) ->
+      Reply=rpc:call(node(),lib_provider,stop,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({unload_provider,ProviderSpec,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_provider,unload,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({is_loaded_provider,ProviderSpec,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_provider,is_loaded,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({is_started_provider,ProviderSpec,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_provider,is_started,[ProviderSpec,HostSpec],60*1000),
+    {reply, Reply, State};
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+
+handle_call({start_host_controller,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_host,start_host_controller,[HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({stop_host_controller,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_host,stop_host_controller,[HostSpec],60*1000),
+    {reply, Reply, State};
+
+handle_call({is_started_host_controller,HostSpec},_From, State) ->
+    Reply=rpc:call(node(),lib_host,is_started_host_controller,[HostSpec],60*1000),
+    {reply, Reply, State};
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+
+
+
 handle_call({ping},_From, State) ->
     Reply=pong,
     {reply, Reply, State};
