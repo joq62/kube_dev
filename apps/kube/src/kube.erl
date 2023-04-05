@@ -51,51 +51,57 @@
 %% @end
 %%--------------------------------------------------------------------
 load_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {load_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 unload_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {unload_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
     
 start_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {start_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 stop_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {stop_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 is_loaded_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {is_loaded_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.   
  
 is_started_provider(ProviderSpec,HostSpec)->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {is_started_provider,ProviderSpec,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.    
 
 %%--------------------------------------------------------------------
@@ -104,27 +110,29 @@ is_started_provider(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 start_host_controller(HostSpec) ->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {start_host_controller,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
     Result.
     
 stop_host_controller(HostSpec) ->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {stop_host_controller,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 is_started_host_controller(HostSpec) ->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {is_started_host_controller,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 
@@ -134,28 +142,31 @@ is_started_host_controller(HostSpec) ->
 %% @end
 %%--------------------------------------------------------------------
 start()-> 
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:start_link({local, ?SERVER}, ?SERVER, [], []),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 stop()-> 
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {stop},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 
 ping() ->
-    io:format("Input ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {ping},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output time ms ~p~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
 
 %%%===================================================================
