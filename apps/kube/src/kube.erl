@@ -114,7 +114,8 @@ start_host_controller(HostSpec) ->
     T1=os:system_time(millisecond),
     Result=gen_server:call(?SERVER, {start_host_controller,HostSpec},infinity),
     T2=os:system_time(millisecond),
-    io:format("Output: ~p~n~n",[{?MODULE,?FUNCTION_NAME,Result," exec time (ms) = ",T2-T1}]),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,Result}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
     Result.
     
 stop_host_controller(HostSpec) ->
