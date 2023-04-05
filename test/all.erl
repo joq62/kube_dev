@@ -20,7 +20,7 @@
 -define(KubeNode,node()).
 -define(HostSpec1,"c200").
 -define(Provider1,"kube").
-
+-define(Provider2,"main").
 
 %% --------------------------------------------------------------------
 %% Include files
@@ -38,19 +38,34 @@ start([Arg1,Arg2])->
     ok=create_controllers(),
     ok=load(),
     ok=start_providers(),
-    R1=get_candidates([all_hosts]),
+    R1=lib_orchestrate:get_candidates([all_hosts],?Provider1,1),
     io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME}]),
-    R2=get_candidates([any_host]),
+    R11=lib_orchestrate:get_candidates([all_hosts],?Provider2,1),
+    io:format("R11 ~p~n",[{R11,?MODULE,?FUNCTION_NAME}]),
+    R2=lib_orchestrate:get_candidates([any_host],?Provider2,2),
     io:format("R2 ~p~n",[{R2,?MODULE,?FUNCTION_NAME}]),
-    R3=get_candidates(["c200"]),
+    R3=lib_orchestrate:get_candidates(["c200"],?Provider2,1),
     io:format("R3 ~p~n",[{R3,?MODULE,?FUNCTION_NAME}]),
-    R4=get_candidates(["c200","c201","c300"]),
+    R4=lib_orchestrate:get_candidates(["c200","c201","c300"],?Provider1,3),
     io:format("R4 ~p~n",[{R4,?MODULE,?FUNCTION_NAME}]),
     
+
+    io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok=stop_provider(),
+    ok=unload(),
+    ok=stop_controllers(),
+    
+
+    %% 
+    ok=update_controllers(),
+
+    %%
+    ok=update_provider(),
+    
+    io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
     
     
-%    ok=stop_provider(),
-%    ok=unload(),
+
     
  %   {ok,ProviderNode,App}=lib_kube:load(?Provider1,?HostSpec1),
  %   ok=lib_kube:start(?Provider1,?HostSpec1),
@@ -68,7 +83,40 @@ start([Arg1,Arg2])->
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
-candidates()->
+update_provider()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    R1=lib_orchestrate:provider_update(),
+    io:format("update_provider ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok.
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+update_controllers()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    R1=lib_orchestrate:host_controller_update(),
+    io:format("update_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+stop_controllers()->
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    R1=[{HostSpec,kube:stop_host_controller(HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
+    io:format("stop_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+
+    ok.
+
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
+candidates(ProviderSpec)->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     ProviderSpec=?Provider1,
     Result=case db_provider_spec:member(ProviderSpec) of
@@ -77,14 +125,14 @@ candidates()->
 	       true->
 		   {ok,Num}=db_provider_spec:read(num,ProviderSpec),
 		   {ok,Affinity}=db_provider_spec:read(affinity,ProviderSpec),
-		   Candidates=get_candidates(Affinity)
+		   get_candidates(Affinity,ProviderSpec)
+		   
 	   end,
     Result.
 
-get_candidates([all_hosts])->
+get_candidates([all_hosts],ProviderSpec)->
     L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
     HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-   % AllNodeHostNameAppList=sd:all(), % {Node,HostName,AppList}
     HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
     HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
     SumList=sum(HostSpecLength,[]),
@@ -94,10 +142,9 @@ get_candidates([all_hosts])->
     SortedHostSpecLength=qsort(SumList),
     SortedHostSpecLength;
 
-get_candidates([any_host])->
+get_candidates([any_host],ProviderSpec)->
     L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
     HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-						% AllNodeHostNameAppList=sd:all(), % {Node,HostName,AppList}
     HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
     HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
     SumList=sum(HostSpecLength,[]),
@@ -107,10 +154,9 @@ get_candidates([any_host])->
     SortedHostSpecLength=qsort(SumList),
     SortedHostSpecLength;
 
-get_candidates(HostList)->
+get_candidates(HostList,ProviderSpec)->
     L1=  L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-HostList],
     HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-						% AllNodeHostNameAppList=sd:all(), % {Node,HostName,AppList}
     HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
     HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
     SumList=sum(HostSpecLength,[]),
@@ -119,15 +165,23 @@ get_candidates(HostList)->
     io:format("SumList ~p~n",[{SumList,?MODULE,?LINE}]),
     SortedHostSpecLength=qsort(SumList),
     SortedHostSpecLength.
-
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
 change_to_host_spec([],_HostSpecNameList,Acc)->
     Acc;
 change_to_host_spec([{HostName,N}|T],HostSpecNameList,Acc)->
     Result=[{HostSpec++"_ny",N}||{HostSpec,XHostName}<-HostSpecNameList,
 				 HostName==XHostName],    
     change_to_host_spec(T,HostSpecNameList,lists:append(Result,Acc)).
-
     
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
 sum([],SumList)->
     SumList;
 sum([{HostName,N}|T],Acc) ->
@@ -139,13 +193,17 @@ sum([{HostName,N}|T],Acc) ->
 		   lists:keyreplace(HostName,1, Acc, {HostName,N+N_Acc})
 	   end,
     sum(T,NewAcc).
-
-
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec
+%% @end
+%%--------------------------------------------------------------------
 qsort([{HostName,PIn}|T])->
     qsort([{H1,PX} || {H1,PX} <- T, PX < PIn]) ++
 	[{HostName,PIn}] ++
 	qsort([{H1,PX} || {H1,PX} <- T, PX >= PIn]);
 qsort([]) -> [].
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec

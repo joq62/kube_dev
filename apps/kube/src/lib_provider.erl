@@ -23,43 +23,15 @@
 	 unload/2,
 	 stop/2,
 	 is_started/2,
+	 is_loaded/2,
 	 is_stopped/2
 	]).
 
--export([
-	 candidates/1
-	]).
 
 %% ====================================================================
 %% External functions
 %% ====================================================================
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-candidates(ProviderSpec)->
-    Result=case db_provider_spec:member(ProviderSpec) of
-	       false->
-		   {error,["eexists ",ProviderSpec]};
-	       true->
-		   {ok,Num}=db_provider_spec:read(num,ProviderSpec),
-		   {ok,Affinity}=db_provider_spec:read(num,ProviderSpec),
-		   Candidates=get_candidates(Affinity),
-		   ok
-	   end,
-    Result.
-
-get_candidates([all_hosts])->
-    L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
-    HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-   % AllNodeHostNameAppList= % {Node,HostName,AppList}
-    HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
-    ok.
-    
-    
-    
-    
+   
 
 %%--------------------------------------------------------------------
 %% @doc

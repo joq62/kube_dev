@@ -1,0 +1,18 @@
+Provider:
+Service that is implmneted by one or more applications
+One Service per host
+Num of instances (one per host)
+Affinity= [all_hosts | any_host | List of HostSpecs] 
+
+Orchestration:
+all_hosts: One provider instance per available host that has not already has an instance of the provider
+
+any_host: One provider instance on Num of hosts avaialble. Host are priortized based on number of applications started on the host
+
+HostSpecLists: One provider instance on Num of hosts based on HostSpecLists. Host are priortized based on number of applications started on the host
+
+Candidates:
+
+Prioritized list of Hosts that have not the provider loaded nor started on the host.
+
+Host that 
