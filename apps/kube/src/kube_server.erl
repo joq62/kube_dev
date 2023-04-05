@@ -67,7 +67,7 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_call({load_provider,ProviderSpec,HostSpec},_From, State) ->
-    Reply=rpc:call(node(),lib_provider,load,[ProviderSpec,HostSpec],60*1000),
+    Reply= rpc:call(node(),lib_provider,load,[ProviderSpec,HostSpec],2*60*1000),
     {reply, Reply, State};
 
 handle_call({start_provider,ProviderSpec,HostSpec},_From, State) ->
@@ -97,15 +97,15 @@ handle_call({is_started_provider,ProviderSpec,HostSpec},_From, State) ->
 %%--------------------------------------------------------------------
 
 handle_call({start_host_controller,HostSpec},_From, State) ->
-    Reply=rpc:call(node(),lib_host,start_host_controller,[HostSpec],60*1000),
+    Reply=rpc:call(node(),lib_host,start_host_controller,[HostSpec],30*1000),
     {reply, Reply, State};
 
 handle_call({stop_host_controller,HostSpec},_From, State) ->
-    Reply=rpc:call(node(),lib_host,stop_host_controller,[HostSpec],60*1000),
+    Reply=rpc:call(node(),lib_host,stop_host_controller,[HostSpec],30*1000),
     {reply, Reply, State};
 
 handle_call({is_started_host_controller,HostSpec},_From, State) ->
-    Reply=rpc:call(node(),lib_host,is_started_host_controller,[HostSpec],60*1000),
+    Reply=rpc:call(node(),lib_host,is_started_host_controller,[HostSpec],30*1000),
     {reply, Reply, State};
 
 %%--------------------------------------------------------------------

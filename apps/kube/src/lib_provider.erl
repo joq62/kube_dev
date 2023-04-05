@@ -41,30 +41,33 @@
 load(ProviderSpec,HostSpec)->
     ProviderExists=db_provider_spec:member(ProviderSpec),
     HostSpecExists=db_host_spec:member(HostSpec),
-    Result=case {ProviderExists,HostSpecExists} of
-	       {false,_}->
+    IsStarted=lib_host:is_started_host_controller(HostSpec),
+    Result=case {ProviderExists,HostSpecExists,IsStarted} of
+	       {false,_,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {_,false}->
+	       {_,false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {true,true}->
+	       {true,true,false}->
+		   {error,["host controller not started ",HostSpec]};
+	       {true,true,true}->
 		   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),
 		   %% 
 		   {ok,ProviderDir}=db_provider_spec:read(dir,ProviderSpec),
 		   case rpc:call(HostNode,file,del_dir_r,[ProviderDir],5000) of
 		       {badrpc,Reason}->
-			   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+			   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 		       _ ->
 			   {ok,GitPath}=db_provider_spec:read(git_path,ProviderSpec),
-			   case rpc:call(HostNode,os,cmd,["git clone "++GitPath],60*1000) of
+			   case rpc:call(HostNode,os,cmd,["git clone "++GitPath],2*55*1000) of
 			       {badrpc,Reason}->
-				   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+				   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 			       {error,Reason}->
 				   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 			       _->
 				   {ok,TarCmd}=db_provider_spec:read(tar_cmd,ProviderSpec),
 				   case rpc:call(HostNode,os,cmd,[TarCmd],20*1000) of
 				       {badrpc,Reason}->
-					   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+					   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 				       {error,Reason}->
 					   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 				       _-> 
@@ -82,19 +85,21 @@ load(ProviderSpec,HostSpec)->
 						   {error,["Failed to stop host controller node ",ProviderNode,?MODULE,?FUNCTION_NAME,?LINE]};
 					       true->
 						   case rpc:call(HostNode,slave,start,[HostName,ProviderNodeName,Args],10*1000) of
+						       {badrpc,Reason}->
+							   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 						       {error,Reason}->
 							   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 						       {ok,ProviderNode}->
 							   {ok,App}=db_provider_spec:read(app,ProviderSpec),
 							   case rpc:call(ProviderNode,code,is_loaded,[App],10*1000)of
 							       {badrpc,Reason}->
-								   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+								   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 							       {file,_}->
 								   {error,["Already loaded",App,?MODULE,?FUNCTION_NAME,?LINE]};
 							       false->
 								   case rpc:call(ProviderNode,application,load,[App],10*1000)of
 								       {badrpc,Reason}->
-									   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+									   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 								       {error,Reason}->
 									   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 								       ok->
@@ -123,12 +128,15 @@ load(ProviderSpec,HostSpec)->
 stop(ProviderSpec,HostSpec)->
     ProviderExists=db_provider_spec:member(ProviderSpec),
     HostSpecExists=db_host_spec:member(HostSpec),
-    Result=case {ProviderExists,HostSpecExists} of
-	       {false,_}->
+    IsStarted=lib_host:is_started_host_controller(HostSpec),
+    Result=case {ProviderExists,HostSpecExists,IsStarted} of
+	       {false,_,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {_,false}->
+	       {_,false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {true,true}->
+	       {true,true,false}->
+		   {error,["host controller not started ",HostSpec]};
+	       {true,true,true}->
 		   case is_stopped(ProviderSpec,HostSpec) of
 		       true->
 			   {error,["Already stopped provider ",ProviderSpec,HostSpec]};
@@ -157,12 +165,15 @@ stop(ProviderSpec,HostSpec)->
 unload(ProviderSpec,HostSpec)->
     ProviderExists=db_provider_spec:member(ProviderSpec),
     HostSpecExists=db_host_spec:member(HostSpec),
-    Result=case {ProviderExists,HostSpecExists} of
-	       {false,_}->
+    IsStarted=lib_host:is_started_host_controller(HostSpec),
+    Result=case {ProviderExists,HostSpecExists,IsStarted} of
+	       {false,_,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {_,false}->
+	       {_,false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {true,true}->
+	       {true,true,false}->
+		   {error,["host controller not started ",HostSpec]};
+	       {true,true,true}->
 		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
 		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
@@ -185,7 +196,7 @@ unload(ProviderSpec,HostSpec)->
 				       {badrpc,Reason}->
 					   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 				       {error,Reason}->
-					   {error,["Failed to stop ProviderDir",ProviderDir, Reason,?MODULE,?FUNCTION_NAME,?LINE]};
+					   {error,["Failed to stop ProviderNode",ProviderNode, Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 				       ok->
 					   ok
 				   end
@@ -202,12 +213,15 @@ unload(ProviderSpec,HostSpec)->
 start(ProviderSpec,HostSpec)->
     ProviderExists=db_provider_spec:member(ProviderSpec),
     HostSpecExists=db_host_spec:member(HostSpec),
-    Result=case {ProviderExists,HostSpecExists} of
-	       {false,_}->
+    IsStarted=lib_host:is_started_host_controller(HostSpec),
+    Result=case {ProviderExists,HostSpecExists,IsStarted} of
+	       {false,_,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {_,false}->
+	       {_,false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
-	       {true,true}->
+	       {true,true,false}->
+		   {error,["host controller not started ",HostSpec]};
+	       {true,true,true}->
 		   {ok,App}=db_provider_spec:read(app,ProviderSpec),
 		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
 		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),

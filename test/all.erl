@@ -35,43 +35,57 @@ start([Arg1,Arg2])->
     io:format("Start ~p~n",[{Arg1,Arg2,?MODULE,?FUNCTION_NAME}]),
 
     ok=setup(),
+    []=lists:sort(nodes()),    
     ok=create_controllers(),
+    ['host_controller@c200','host_controller@c201']=lists:sort(nodes()),
     ok=load(),
+    ['host_controller@c200','host_controller@c201',
+     'kube@c200','kube@c201'
+    ]=lists:sort(nodes()),
     ok=start_providers(),
-    R1=lib_orchestrate:get_candidates([all_hosts],?Provider1,1),
-    io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME}]),
-    R11=lib_orchestrate:get_candidates([all_hosts],?Provider2,1),
-    io:format("R11 ~p~n",[{R11,?MODULE,?FUNCTION_NAME}]),
-    R2=lib_orchestrate:get_candidates([any_host],?Provider2,2),
-    io:format("R2 ~p~n",[{R2,?MODULE,?FUNCTION_NAME}]),
-    R3=lib_orchestrate:get_candidates(["c200"],?Provider2,1),
-    io:format("R3 ~p~n",[{R3,?MODULE,?FUNCTION_NAME}]),
-    R4=lib_orchestrate:get_candidates(["c200","c201","c300"],?Provider1,3),
-    io:format("R4 ~p~n",[{R4,?MODULE,?FUNCTION_NAME}]),
+    KubeNodes=sd:get_node(kube),
+    [pong,pong,pong]=[rpc:call(N,kube,ping,[],1000)||N<-KubeNodes],
+    
+  %  R1=lib_orchestrate:get_candidates([all_hosts],?Provider1,1),
+  %  io:format("R1 ~p~n",[{R1,?MODULE,?FUNCTION_NAME}]),
+  %  R11=lib_orchestrate:get_candidates([all_hosts],?Provider2,1),
+  %  io:format("R11 ~p~n",[{R11,?MODULE,?FUNCTION_NAME}]),
+  %  R2=lib_orchestrate:get_candidates([any_host],?Provider2,2),
+  %  io:format("R2 ~p~n",[{R2,?MODULE,?FUNCTION_NAME}]),
+  %  R3=lib_orchestrate:get_candidates(["c200"],?Provider2,1),
+  %  io:format("R3 ~p~n",[{R3,?MODULE,?FUNCTION_NAME}]),
+  %  R4=lib_orchestrate:get_candidates(["c200","c201","c300"],?Provider1,3),
+  %  io:format("R4 ~p~n",[{R4,?MODULE,?FUNCTION_NAME}]),
     
 
-    io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
+    io:format("KubeNodes ~p~n",[{KubeNodes,?MODULE,?FUNCTION_NAME,?LINE}]),
     ok=stop_provider(),
+    [
+     pong,
+     {badrpc,{'EXIT',{noproc,{gen_server,call,[kube_server,{ping},infinity]}}}},
+     {badrpc,{'EXIT',{noproc,{gen_server,call,[kube_server,{ping},infinity]}}}}
+    ]=[rpc:call(N,kube,ping,[],1000)||N<-KubeNodes],
+    [
+     'host_controller@c200','host_controller@c201',
+     'kube@c200','kube@c201'
+    ]=lists:sort(nodes()),  
+  
+   
     ok=unload(),
+    ['host_controller@c200','host_controller@c201']=lists:sort(nodes()),  
     ok=stop_controllers(),
-    
+    []=lists:sort(nodes()),
 
     %% 
     ok=update_controllers(),
-
+    ['host_controller@c200','host_controller@c201']=lists:sort(nodes()),
     %%
     ok=update_provider(),
+    ['host_controller@c200','host_controller@c201',
+     'kube@c200','kube@c201'
+    ]=lists:sort(nodes()),
+    [pong,pong,pong]=[rpc:call(N,kube,ping,[],1000)||N<-KubeNodes],
     
-    io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
-    
-    
-
-    
- %   {ok,ProviderNode,App}=lib_kube:load(?Provider1,?HostSpec1),
- %   ok=lib_kube:start(?Provider1,?HostSpec1),
- %   pong=rpc:call(ProviderNode,App,ping,[],5000),
- %   ok=ssh_test(),
-
     io:format("End testing  SUCCESS!! ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
 %    init:stop(),
 %    timer:sleep(3000),
@@ -85,8 +99,8 @@ start([Arg1,Arg2])->
 %%--------------------------------------------------------------------
 update_provider()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    R1=lib_orchestrate:provider_update(),
-    io:format("update_provider ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    lib_orchestrate:provider_update(),
+ %   io:format("update_provider ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
     ok.
 %%--------------------------------------------------------------------
 %% @doc
@@ -95,8 +109,8 @@ update_provider()->
 %%--------------------------------------------------------------------
 update_controllers()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    R1=lib_orchestrate:host_controller_update(),
-    io:format("update_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    lib_orchestrate:host_controller_update(),
+%    io:format("update_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
     ok.
 
 %%--------------------------------------------------------------------
@@ -106,103 +120,11 @@ update_controllers()->
 %%--------------------------------------------------------------------
 stop_controllers()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    R1=[{HostSpec,kube:stop_host_controller(HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
-    io:format("stop_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+    [{HostSpec,kube:stop_host_controller(HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
+    %io:format("stop_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
 
     ok.
 
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-candidates(ProviderSpec)->
-    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    ProviderSpec=?Provider1,
-    Result=case db_provider_spec:member(ProviderSpec) of
-	       false->
-		   {error,["eexists ",ProviderSpec]};
-	       true->
-		   {ok,Num}=db_provider_spec:read(num,ProviderSpec),
-		   {ok,Affinity}=db_provider_spec:read(affinity,ProviderSpec),
-		   get_candidates(Affinity,ProviderSpec)
-		   
-	   end,
-    Result.
-
-get_candidates([all_hosts],ProviderSpec)->
-    L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
-    HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-    HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
-    HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
-    SumList=sum(HostSpecLength,[]),
-    io:format("sd:all() ~p~n",[{sd:all(),?MODULE,?LINE}]),
-    io:format("HostSpecLength ~p~n",[{HostSpecLength,?MODULE,?LINE}]),
-    io:format("SumList ~p~n",[{SumList,?MODULE,?LINE}]),
-    SortedHostSpecLength=qsort(SumList),
-    SortedHostSpecLength;
-
-get_candidates([any_host],ProviderSpec)->
-    L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
-    HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-    HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
-    HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
-    SumList=sum(HostSpecLength,[]),
-    io:format("sd:all() ~p~n",[{sd:all(),?MODULE,?LINE}]),
-    io:format("HostSpecLength ~p~n",[{HostSpecLength,?MODULE,?LINE}]),
-    io:format("SumList ~p~n",[{SumList,?MODULE,?LINE}]),
-    SortedHostSpecLength=qsort(SumList),
-    SortedHostSpecLength;
-
-get_candidates(HostList,ProviderSpec)->
-    L1=  L1=[{HostSpec,db_host_spec:read(hostname,HostSpec)}||HostSpec<-HostList],
-    HostSpecNameList=[{HostSpec,HostName}||{HostSpec,{ok,HostName}}<-L1],
-    HostNameLength=[{HostName,erlang:length(AppList)}||{Node,HostName,AppList}<-sd:all()],
-    HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
-    SumList=sum(HostSpecLength,[]),
-    io:format("sd:all() ~p~n",[{sd:all(),?MODULE,?LINE}]),
-    io:format("HostSpecLength ~p~n",[{HostSpecLength,?MODULE,?LINE}]),
-    io:format("SumList ~p~n",[{SumList,?MODULE,?LINE}]),
-    SortedHostSpecLength=qsort(SumList),
-    SortedHostSpecLength.
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-change_to_host_spec([],_HostSpecNameList,Acc)->
-    Acc;
-change_to_host_spec([{HostName,N}|T],HostSpecNameList,Acc)->
-    Result=[{HostSpec++"_ny",N}||{HostSpec,XHostName}<-HostSpecNameList,
-				 HostName==XHostName],    
-    change_to_host_spec(T,HostSpecNameList,lists:append(Result,Acc)).
-    
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-sum([],SumList)->
-    SumList;
-sum([{HostName,N}|T],Acc) ->
-    NewAcc=case lists:keyfind(HostName,1,Acc) of
-	       false->
-		   
-		   [{HostName,N}|Acc];
-	       {HostName,N_Acc} ->
-		   lists:keyreplace(HostName,1, Acc, {HostName,N+N_Acc})
-	   end,
-    sum(T,NewAcc).
-%%--------------------------------------------------------------------
-%% @doc
-%% @spec
-%% @end
-%%--------------------------------------------------------------------
-qsort([{HostName,PIn}|T])->
-    qsort([{H1,PX} || {H1,PX} <- T, PX < PIn]) ++
-	[{HostName,PIn}] ++
-	qsort([{H1,PX} || {H1,PX} <- T, PX >= PIn]);
-qsort([]) -> [].
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -215,12 +137,12 @@ unload()->
     UnLoadR=[unload(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
     
   [
-   {error,["Failed to unload app",badrpc,kube,"kube","c100",nodedown,lib_provider,unload,_]},
+   {error,["host controller not started ","c100"]},
    {ok,"kube","c200"},
    {ok,"kube","c201"},
-   {error,["Failed to unload app",badrpc,kube,"kube","c202",nodedown,lib_provider,unload,_]},
-   {error,["Failed to unload app",badrpc,kube,"kube","c300",nodedown,lib_provider,unload,_]},
-   {error,["Failed to unload app",badrpc,kube,"kube","c50",nodedown,lib_provider,unload,_]}
+   {error,["host controller not started ","c202"]},
+   {error,["host controller not started ","c300"]},
+   {error,["host controller not started ","c50"]}
   ]=UnLoadR,
      
    %  io:format("LoadR ~p~n",[{LoadR,?MODULE,?FUNCTION_NAME}]),
@@ -230,10 +152,10 @@ unload()->
 unload(ProviderSpec,HostSpec)->
     Result=case kube:unload_provider(ProviderSpec,HostSpec) of
 	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
 	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {ok,ProviderSpec,HostSpec}
 	   end,
     Result.
@@ -247,23 +169,24 @@ stop_provider()->
       io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
     StopR=[stop_provider(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
+    
     [
-     {error,["Already stopped provider ","kube","c100"]},
+     {error,["host controller not started ","c100"]},
      {ok,"kube","c200"},
      {ok,"kube","c201"},
-     {error,["Already stopped provider ","kube","c202"]},
-     {error,["Already stopped provider ","kube","c300"]},
-     {error,["Already stopped provider ","kube","c50"]}
+     {error,["host controller not started ","c202"]},
+     {error,["host controller not started ","c300"]},
+     {error,["host controller not started ","c50"]}
     ]=StopR,
 
     ok.
 stop_provider(ProviderSpec,HostSpec)->
     Result=case kube:stop_provider(ProviderSpec,HostSpec) of
 	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
 	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {ok,ProviderSpec,HostSpec}
 	   end,
     Result.
@@ -281,22 +204,23 @@ start_providers()->
     AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
     StartR=[start_provider(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
     
-    [{error,["Not loaded  ",kube,lib_provider,start,_]},
-     {ok,"kube","c200"},
-     {ok,"kube","c201"},
-     {error,["Not loaded  ",kube,lib_provider,start,_]},
-     {error,["Not loaded  ",kube,lib_provider,start,_]},
-     {error,["Not loaded  ",kube,lib_provider,start,_]}
-    ]=StartR,
+   [
+    {error,["host controller not started ","c100"]},
+    {ok,"kube","c200"},
+    {ok,"kube","c201"},
+    {error,["host controller not started ","c202"]},
+    {error,["host controller not started ","c300"]},
+    {error,["host controller not started ","c50"]}
+   ]=StartR,
 
     ok.
 start_provider(ProviderSpec,HostSpec)->
     Result=case kube:start_provider(ProviderSpec,HostSpec) of
 	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
 	       ok->
-		   io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
+		 %  io:format("Ok ~p~n",[{ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {ok,ProviderSpec,HostSpec}
 	   end,
     Result.
@@ -307,18 +231,20 @@ start_provider(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 load()->
-    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
+    io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     AllHostSpecs=lists:sort(db_host_spec:get_all_id()),
     LoadR=[load(?Provider1,HostSpec)||HostSpec<-AllHostSpecs],
 
-    [{error,[badrpc,nodedown,lib_provider,load,_]},
-      {ok,kube@c200,kube},
-      {ok,kube@c201,kube},
-      {error,[badrpc,nodedown,lib_provider,load,_]},
-      {error,[badrpc,nodedown,lib_provider,load,_]},
-      {error,[badrpc,nodedown,lib_provider,load,_]}
+    [
+     {error,["host controller not started ","c100"]},
+     {ok,'kube@c200',kube},
+     {ok,'kube@c201',kube},
+     {error,["host controller not started ","c202"]},
+     {error,["host controller not started ","c300"]},
+     {error,["host controller not started ","c50"]}
     ]=LoadR,
-     
+
+        
    %  io:format("LoadR ~p~n",[{LoadR,?MODULE,?FUNCTION_NAME}]),
 
     ok.
@@ -328,10 +254,10 @@ load()->
 load(ProviderSpec,HostSpec)->
     Result=case kube:load_provider(ProviderSpec,HostSpec) of
 	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
+	%	   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
 	       {ok,ProviderNode,App}->
-		   io:format("Ok ~p~n",[{ProviderNode,App,?MODULE,?FUNCTION_NAME,?LINE}]),
+	%	   io:format("Ok ~p~n",[{ProviderNode,App,?MODULE,?FUNCTION_NAME,?LINE}]),
 		  {ok,ProviderNode,App}
 	   end,
     Result.
@@ -348,17 +274,17 @@ create_controllers()->
     Started=[HostSpec||HostSpec<-AllHostSpecs,
 		  kube:is_started_host_controller(HostSpec)],
     ["c200","c201"]=Started,
-    io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
+   % io:format("nodes() ~p~n",[{nodes(),?MODULE,?FUNCTION_NAME,?LINE}]),
      
     ok.
    
 create_controller(HostSpec)->
     Result=case kube:start_host_controller(HostSpec) of
 	       {error,Reason}->
-		   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
+	%	   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
 	       {ok,Node,HostSpec}->
-		   io:format("Ok ~p~n",[{HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
+	%	   io:format("Ok ~p~n",[{HostSpec,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {ok,Node,HostSpec}
 	   end,
     Result.
@@ -406,8 +332,8 @@ create_host()->
 create_host([])->
     ok;
 create_host([HostSpec|T]) ->
-    R=rpc:call(?KubeNode,host_server,create_node,[HostSpec],30*1000),
-    io:format("Dbg HostSpec,R ~p~n",[{HostSpec,R,?MODULE,?FUNCTION_NAME}]),
+    rpc:call(?KubeNode,host_server,create_node,[HostSpec],30*1000),
+ %   io:format("Dbg HostSpec,R ~p~n",[{HostSpec,R,?MODULE,?FUNCTION_NAME}]),
     create_host(T).
 
 %%--------------------------------------------------------------------

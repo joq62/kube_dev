@@ -119,8 +119,6 @@ get_candidates([all_hosts],ProviderSpec,_Num)->
     
     MissingProviders=TotalNumPossibleProviders-erlang:length([true||HostSpec<-db_host_spec:get_all_id(),
 								    true==kube:is_started_provider(ProviderSpec,HostSpec)]),
-    io:format("TotalNumPossibleProviders ~p~n",[{TotalNumPossibleProviders,?MODULE,?LINE}]),
-    io:format("MissingProviders ~p~n",[{MissingProviders,?MODULE,?LINE}]),
     Result=case MissingProviders of
 	       0->
 		   [];
@@ -131,9 +129,6 @@ get_candidates([all_hosts],ProviderSpec,_Num)->
 		   HostNameLength=[{HostName,erlang:length(AppList)}||{_Node,HostName,AppList}<-sd:all()],
 		   HostSpecLength=change_to_host_spec(HostNameLength,HostSpecNameList,[]),
 		   SumList=sum(HostSpecLength,[]),
-		   io:format("sd:all() ~p~n",[{sd:all(),?MODULE,?LINE}]),
-		   io:format("HostSpecLength ~p~n",[{HostSpecLength,?MODULE,?LINE}]),
-		   io:format("SumList ~p~n",[{SumList,?MODULE,?LINE}]),
 		   SortedHostSpecLength=qsort(SumList),
 		   Candidates=[HostSpec||{HostSpec,_}<-SortedHostSpecLength],
 		   Candidates
@@ -142,7 +137,7 @@ get_candidates([all_hosts],ProviderSpec,_Num)->
 		 
 
 get_candidates([any_host],ProviderSpec,Num)->
-     TotalNumPossibleProviders=Num,
+    TotalNumPossibleProviders=Num,
     MissingProviders=TotalNumPossibleProviders-erlang:length([true||HostSpec<-db_host_spec:get_all_id(),
 					      true==kube:is_started_provider(ProviderSpec,HostSpec)]),
     Result=case MissingProviders of
