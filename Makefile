@@ -36,6 +36,8 @@ prod:
 	rm -rf test/*.beam test/*~;	
 	rebar3 as prod release;
 	rebar3 as prod tar;
+	rm /home/joq62/erlang/infra/api_repo/kube.api;
+	cp api/kube.api /home/joq62/erlang/infra/api_repo;
 	mv _build/prod/rel/kube/*.tar.gz ../release 
 
 dev:
@@ -54,8 +56,10 @@ eunit:
 	rm -rf apps/kube/src/*~ *~;
 	rm -rf apps/kube/src/*.beam;
 	rm -rf  _build;
+	rm -rf api/*;
 	rebar3 release;
 	rm -rf test_ebin;
 	mkdir test_ebin;
-	erlc -o test_ebin test/*.erl;
+	cp apps/kube/src/*.api api;
+	erlc -I api -I /home/joq62/erlang/infra/api_repo -o test_ebin test/*.erl;
 	erl -pa _build/default/lib/*/* -pa test_ebin -sname do_test -run $(m) start $(a) $(b) -setcookie $(c)

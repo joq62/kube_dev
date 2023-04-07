@@ -47,6 +47,7 @@
 %init(ClusterSpec) -> 
 init([]) -> 
     io:format("Debug ~p~n",[{?MODULE,?LINE}]),
+    lib_db:dynamic_db_init([]),
    % sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[]]),
     {ok, #state{}}.   
  

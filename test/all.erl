@@ -14,7 +14,8 @@
 -export([start/1]).
 -compile(export_all).
 
--include_lib("kernel/include/inet.hrl").
+
+-include("kube.api").
 
 
 -define(KubeNode,node()).
@@ -120,8 +121,9 @@ update_controllers()->
 %%--------------------------------------------------------------------
 stop_controllers()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
-    [{HostSpec,kube:stop_host_controller(HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
-    %io:format("stop_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
+ %   [{HostSpec,kube:stop_host_controller(HostSpec)}||HostSpec<-db_host_spec:get_all_id()],
+    R1=[{HostSpec,?Kube_Stop_Host_Controller(HostSpec,node(),infinity)}||HostSpec<-db_host_spec:get_all_id()],
+    io:format("stop_controllers ~p~n",[{R1,?MODULE,?FUNCTION_NAME,?LINE}]),
 
     ok.
 
@@ -150,7 +152,7 @@ unload()->
     ok.
     
 unload(ProviderSpec,HostSpec)->
-    Result=case kube:unload_provider(ProviderSpec,HostSpec) of
+    Result=case ?Kube_UnLoad_Provider(ProviderSpec,HostSpec,node(),infinity) of
 	       {error,Reason}->
 		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
@@ -181,7 +183,7 @@ stop_provider()->
 
     ok.
 stop_provider(ProviderSpec,HostSpec)->
-    Result=case kube:stop_provider(ProviderSpec,HostSpec) of
+    Result=case ?Kube_Stop_Provider(ProviderSpec,HostSpec,node(),infinity) of
 	       {error,Reason}->
 		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
@@ -215,7 +217,7 @@ start_providers()->
 
     ok.
 start_provider(ProviderSpec,HostSpec)->
-    Result=case kube:start_provider(ProviderSpec,HostSpec) of
+    Result=case ?Kube_Start_Provider(ProviderSpec,HostSpec,node(),infinity) of
 	       {error,Reason}->
 		 %  io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
@@ -252,7 +254,8 @@ load()->
     
 
 load(ProviderSpec,HostSpec)->
-    Result=case kube:load_provider(ProviderSpec,HostSpec) of
+    Result=case ?Kube_Load_Provider(ProviderSpec,HostSpec,node(),infinity) of
+  %  Result=case kube:load_provider(ProviderSpec,HostSpec) of
 	       {error,Reason}->
 	%	   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
@@ -279,7 +282,7 @@ create_controllers()->
     ok.
    
 create_controller(HostSpec)->
-    Result=case kube:start_host_controller(HostSpec) of
+    Result=case ?Kube_Start_Host_Controller(HostSpec,node(),infinity) of
 	       {error,Reason}->
 	%	   io:format("Error ~p~n",[{HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE}]),
 		   {error,Reason};
@@ -413,8 +416,6 @@ setup()->
     pong=kube:ping(),  
     pong=common:ping(), 
     pong=sd:ping(),
-    pong=etcd:ping(),
-
     []=[{error,[HostSpec]}||HostSpec<-lists:sort(db_host_spec:get_all_id()),
-			       ok/=kube:stop_host_controller(HostSpec)],
+			    ok/=kube:stop_host_controller(HostSpec)],
     ok.
