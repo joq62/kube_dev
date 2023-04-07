@@ -8,6 +8,8 @@
 %%%-------------------------------------------------------------------
 -module(kube).
 
+-include("log.api").
+
 -define(SERVER,kube_server).
 
 %% API
@@ -155,6 +157,7 @@ stop_provider(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 is_started_provider(ProviderSpec,HostSpec,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    ?LOG_NOTICE("is_started_test",[ProviderSpec,HostSpec]),
     io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
     io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
     io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[ProviderSpec,HostSpec]}]),
@@ -191,6 +194,7 @@ is_loaded_provider(ProviderSpec,HostSpec)->
 %%--------------------------------------------------------------------
 
 start_host_controller(HostSpec,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    ?LOG_NOTICE("testing",[HostSpec]),
     io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
     io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
     io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
@@ -212,11 +216,12 @@ start_host_controller(HostSpec)->
 %%--------------------------------------------------------------------
 
 stop_host_controller(HostSpec,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+   ?LOG_NOTICE("logging",[HostSpec]),
     io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
     io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
     io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[HostSpec]}]),
     T1=os:system_time(millisecond),
-    Result=start_host_controller(HostSpec),
+    Result=stop_host_controller(HostSpec),
     T2=os:system_time(millisecond),
     io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,[Result]}]),
     io:format("Exection time (ms): ~p~n~n",[T2-T1]),
@@ -251,6 +256,7 @@ is_started_host_controller(HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 start({SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+   ?LOG_NOTICE("Start gen_server",[]),
     io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
     io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
     io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),
@@ -289,6 +295,7 @@ stop()->
 %% @end
 %%--------------------------------------------------------------------
 ping({SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    ?LOG_NOTICE("ping",[]),
     io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
     io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
     io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[]}]),

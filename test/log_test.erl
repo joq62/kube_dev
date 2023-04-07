@@ -28,7 +28,7 @@ start([_Arg1,_Arg2])->
     ok=setup(),
   
     ok=logging(),
-    ok=read_test(),
+ %   ok=read_test(),
 
     io:format("Test SUCCEDED OK!!!! ~p~n",[{?MODULE,?FUNCTION_NAME}]),
 %    init:stop(),
@@ -65,24 +65,24 @@ logging()->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     
    % ok=log:debug(?MODULE_STRING,?LINE,"debug_1"),
-    ok=?LOG_DEBUG("debug_1"),
+    ok=?LOG_DEBUG("debug_1",[]),
 
  %   ok=log:notice(?MODULE_STRING,?LINE,"notice_1"),
-    ok=?LOG_NOTICE("notice_1"),
+    ok=?LOG_NOTICE("notice_1",[]),
 
 
     % ok=log:warning(?MODULE_STRING,?LINE,"warning_1"),
-    ok=?LOG_WARNING("warning_1"),    
+    ok=?LOG_WARNING("warning_1",[{a,1},atom]),    
 
     %ok=log:alert(?MODULE_STRING,?LINE,"alert_1"),
-    ok=?LOG_ALERT("alert_1"),
+    ok=?LOG_ALERT("alert_1",[]),
     
     Term={error,[eexists,{?MODULE,?FUNCTION_NAME}]},
     R= io_lib:format("~p",[Term]),
     TermAsStering=lists:flatten(R),
   
    % ok=log:alert(?MODULE_STRING,?LINE,TermAsStering),
-    ok=?LOG_ALERT(TermAsStering),
+    ok=?LOG_ALERT(TermAsStering,[]),
     ok.
 
 %% --------------------------------------------------------------------

@@ -44,7 +44,7 @@ create_logfile(MainLogDir,ProviderLogDir,LogFilePath)->
 parse(ListRaw)->
     [parse_item(Item)||Item<-ListRaw].
 
-parse_item({TimeStamp,SenderNode,SenderPid,Module,Function,Line,MsgAsString})->
+parse_item({TimeStamp,SenderNode,SenderPid,Module,Function,Line,Data,MsgAsString})->
     {{Y,M,D},{H,Mi,S}}=calendar:now_to_datetime(TimeStamp),
     Year=integer_to_list(Y),
     Month=integer_to_list(M),
@@ -58,9 +58,11 @@ parse_item({TimeStamp,SenderNode,SenderPid,Module,Function,Line,MsgAsString})->
     ModuleStr=atom_to_list(Module),
     FunctionStr=atom_to_list(Function),
     LineStr=integer_to_list(Line),
+    
+    
     DateTime=Year++"-"++Month++"-"++Day++" | "++Hour++":"++Min++":"++Sec++" | ",
     Text=DateTime++SenderNodeStr++" | "++SenderPidStr++" | "++ModuleStr++":"++FunctionStr++"/"++LineStr++" |  Msg : "++MsgAsString,
-    Text.
+    [Text,Data].
 %% --------------------------------------------------------------------
 %% Function: available_hosts()
 %% Description: Based on hosts.config file checks which hosts are avaible
@@ -84,6 +86,7 @@ create_logger(LogFile)->
 							  sender_module," | ",
 							  sender_function," | ",
 							  sender_line," | ",
+							  data," | ",
 							  msg,"\n"
 							 ]}}}) of
 	       {error,Reason}->
@@ -105,6 +108,7 @@ create_logger(LogFile)->
 					   sender_module," | ",
 					   sender_function," | ",
 					   sender_line," | ",
+					   data," | ",
 					   msg,"\n"
 					  ]}}) of
 		       {error,Reason}->

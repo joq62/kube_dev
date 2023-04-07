@@ -26,7 +26,7 @@
 	 read/1,
 	 log/4,
 
-	 debug/2,notice/2,warning/2,alert/2,
+	 debug/3,notice/3,warning/3,alert/3,
 	 create_logfile/3,
 	 create/1,
 
@@ -85,14 +85,14 @@ log(Level,ModuleString,Line,Msg)->
 
 
 
-debug(Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
-    gen_server:cast(?SERVER, {debug,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
-notice(Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
-    gen_server:cast(?SERVER, {notice,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
-warning(Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
-    gen_server:cast(?SERVER, {warning,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
-alert(Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
-    gen_server:cast(?SERVER, {alert,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
+debug(Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    gen_server:cast(?SERVER, {debug,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
+notice(Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    gen_server:cast(?SERVER, {notice,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
+warning(Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    gen_server:cast(?SERVER, {warning,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
+alert(Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    gen_server:cast(?SERVER, {alert,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}).
 
 
 

@@ -140,7 +140,7 @@ handle_call(Request, From, State) ->
 %%          {noreply, State, Timeout} |
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
-handle_cast({debug,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
+handle_cast({debug,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
     R= io_lib:format("~p",[Msg]),
     MsgAsString=lists:flatten(R),
  %    logger:debug(MsgAsString,#{file=>ModuleString,line=>Line}),
@@ -149,18 +149,19 @@ handle_cast({debug,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}
 			       sender_pid=>SenderPid,
 			       sender_module=>Module,
 			       sender_function=>FunctionName,
-			       sender_line=>Line}),
+			       sender_line=>Line,
+			       sender_data=>Data}),
     Len=list_length:start(State#state.debug),
     if
 	Len<?MAX_LOG_LENGTH->
-	    NewState=State#state{debug=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|State#state.debug]};
+	    NewState=State#state{debug=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|State#state.debug]};
 	true->
 	    Templist=lists:delete(lists:last(State#state.notice),State#state.debug),
-	    NewState=State#state{debug=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|Templist]}
+	    NewState=State#state{debug=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|Templist]}
     end,
     {noreply,NewState};
 
-handle_cast({notice,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
+handle_cast({notice,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
     R= io_lib:format("~p",[Msg]),
     MsgAsString=lists:flatten(R),
     logger:notice(MsgAsString,#{timestamp=>TimeStamp,
@@ -168,19 +169,20 @@ handle_cast({notice,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp
 				sender_pid=>SenderPid,
 				sender_module=>Module,
 				sender_function=>FunctionName,
-				sender_line=>Line}),
+				sender_line=>Line,
+				sender_data=>Data}),
     Len=list_length:start(State#state.notice),
 						%   io:format("notice Len= ~p~n",[{Len,?MODULE,?LINE}]),
     if
 	Len<?MAX_LOG_LENGTH->
-	    NewState=State#state{notice=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|State#state.notice]};
+	    NewState=State#state{notice=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|State#state.notice]};
 	true->
 	    Templist=lists:delete(lists:last(State#state.notice),State#state.notice),
-	    NewState=State#state{notice=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|Templist]}
+	    NewState=State#state{notice=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|Templist]}
     end,
     {noreply,NewState};
 
-handle_cast({warning,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
+handle_cast({warning,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
     R= io_lib:format("~p",[Msg]),
     MsgAsString=lists:flatten(R),
     logger:warning(MsgAsString,#{timestamp=>TimeStamp,
@@ -188,19 +190,20 @@ handle_cast({warning,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStam
 				 sender_pid=>SenderPid,
 				 sender_module=>Module,
 				 sender_function=>FunctionName,
-				 sender_line=>Line}),
+				 sender_line=>Line,
+				 sender_data=>Data}),
     Len=list_length:start(State#state.warning),
 						%   io:format("notice Len= ~p~n",[{Len,?MODULE,?LINE}]),
     if
 	Len<?MAX_LOG_LENGTH->
-	    NewState=State#state{warning=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|State#state.warning]};
+	    NewState=State#state{warning=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|State#state.warning]};
 	true->
 	    Templist=lists:delete(lists:last(State#state.notice),State#state.warning),
-	    NewState=State#state{warning=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|Templist]}
+	    NewState=State#state{warning=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|Templist]}
     end,
     {noreply,NewState};
 
-handle_cast({alert,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
+handle_cast({alert,Msg,Data,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}}, State) ->
     R= io_lib:format("~p",[Msg]),
     MsgAsString=lists:flatten(R),
     logger:alert(MsgAsString,#{timestamp=>TimeStamp,
@@ -208,15 +211,16 @@ handle_cast({alert,Msg,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}
 			       sender_pid=>SenderPid,
 			       sender_module=>Module,
 			       sender_function=>FunctionName,
-			       sender_line=>Line}),
+			       sender_line=>Line,
+			       sender_data=>Data}),
     Len=list_length:start(State#state.alert),
 						%   io:format("notice Len= ~p~n",[{Len,?MODULE,?LINE}]),
     if
 	Len<?MAX_LOG_LENGTH->
-	    NewState=State#state{alert=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|State#state.alert]};
+	    NewState=State#state{alert=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|State#state.alert]};
 	true->
 	    Templist=lists:delete(lists:last(State#state.notice),State#state.alert),
-	    NewState=State#state{alert=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,MsgAsString}|Templist]}
+	    NewState=State#state{alert=[{TimeStamp,SenderNode,SenderPid,Module,FunctionName,Line,Data,MsgAsString}|Templist]}
     end,
     {noreply,NewState};
 

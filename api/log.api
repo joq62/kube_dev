@@ -2,10 +2,10 @@
 %%%% Log Api -----------------------------------------------------------------------------
 
 %% log:debug(Msg)
--define(LOG_DEBUG(Msg),log:debug(Msg,?Sender)).
+-define(LOG_DEBUG(Msg,Data),log:debug(Msg,Data,?Sender)).
 
--define(LOG_NOTICE(Msg),log:notice(Msg,?Sender)).
+-define(LOG_NOTICE(Msg,Data),log:notice(Msg,Data,?Sender)).
 
--define(LOG_WARNING(Msg),log:warning(Msg,?Sender)).
+-define(LOG_WARNING(Msg,Data),log:warning(Msg,Data,?Sender)).
 
--define(LOG_ALERT(Msg),log:alert(Msg,?Sender)).
+-define(LOG_ALERT(Msg,Data),log:alert(Msg,Data,?Sender)).

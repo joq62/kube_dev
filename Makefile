@@ -37,7 +37,7 @@ prod:
 	rebar3 as prod release;
 	rebar3 as prod tar;
 	rm /home/joq62/erlang/infra/api_repo/kube.api;
-	cp api/kube.api /home/joq62/erlang/infra/api_repo;
+	cp api/*.api /home/joq62/erlang/infra/api_repo;
 	mv _build/prod/rel/kube/*.tar.gz ../release 
 
 dev:
