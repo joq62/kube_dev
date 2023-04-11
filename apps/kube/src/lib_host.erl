@@ -53,11 +53,11 @@
 %% @end
 %%--------------------------------------------------------------------
 start_host_controller(HostSpec)->
-    Result=case db_host_spec:member(HostSpec) of
+    Result=case sd:call(dbetcd,db_host_spec,member,[HostSpec],5000) of
 	       false->
 		   {error,["eexists ",HostSpec]};
 	       true->
-		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   {ok,HostControllerNode}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
 		   rpc:call(HostControllerNode,init,stop,[],5000),
 		   case vm:check_stopped_node(HostControllerNode) of
 		       false->
@@ -66,7 +66,7 @@ start_host_controller(HostSpec)->
 			   PaArgs=" ",
 			   EnvArgs="  ",
 			   CookieStr=atom_to_list(erlang:get_cookie()),
-			   {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+			   {ok,NodeName}=sd:call(dbetcd,db_host_spec,read,[connect_node_name,HostSpec],5000),
 			   ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)
 		   end
 	   end,
@@ -78,11 +78,11 @@ start_host_controller(HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 stop_host_controller(HostSpec)->
-    Result=case db_host_spec:member(HostSpec) of
+    Result=case sd:call(dbetcd,db_host_spec,member,[HostSpec],5000) of
 	       false->
 		   {error,["eexists ",HostSpec]};
 	       true->
-		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   {ok,HostControllerNode}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
 		   rpc:call(HostControllerNode,init,stop,[],5000),
 		   case vm:check_stopped_node(HostControllerNode) of
 		       false->
@@ -98,11 +98,11 @@ stop_host_controller(HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 is_started_host_controller(HostSpec)->
-    Result=case db_host_spec:member(HostSpec) of
+    Result=case sd:call(dbetcd,db_host_spec,member,[HostSpec],5000) of
 	       false->
 		   {error,["eexists ",HostSpec]};
 	       true->
-		   {ok,HostControllerNode}=db_host_spec:read(connect_node,HostSpec),
+		   {ok,HostControllerNode}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
 		   case net_adm:ping(HostControllerNode) of
 		       pang->
 			   false;
@@ -129,19 +129,19 @@ ssh_start_nodes([HostSpec|T],CookieStr,Acc) ->
 ssh_create_node(HostSpec,CookieStr)->
     PaArgs=" ",
     EnvArgs="  ",
-    {ok,Node}=db_host_spec:read(connect_node,HostSpec),
+    {ok,Node}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
     rpc:call(Node,init,stop,[]),
     timer:sleep(3000),
-    {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+    {ok,NodeName}=sd:call(dbetcd,db_host_spec,read,[connect_node_name,HostSpec],5000),
     ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs).
 
 ssh_create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
-    {ok,Ip}=db_host_spec:read(local_ip,HostSpec),
-    {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
-    {ok,Uid}=db_host_spec:read(uid,HostSpec),
-    {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     ErlCmd="erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++" -detached",
-    {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+    {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
     Node=list_to_atom(NodeName++"@"++HostName),
     CreateResult={my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,ErlCmd,?TimeOut),Node,HostSpec},
     %% connect
@@ -175,19 +175,19 @@ start_nodes([HostSpec|T],CookieStr,Acc) ->
 create_node(HostSpec,CookieStr)->
      PaArgs=" ",
     EnvArgs="  ",
-    {ok,Node}=db_host_spec:read(connect_node,HostSpec),
+    {ok,Node}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
     rpc:call(Node,init,stop,[]),
     timer:sleep(3000),
-    {ok,NodeName}=db_host_spec:read(connect_node_name,HostSpec),
+    {ok,NodeName}=sd:call(dbetcd,db_host_spec,read,[connect_node_name,HostSpec],5000),
     create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs).
 
 create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
-    {ok,Ip}=db_host_spec:read(local_ip,HostSpec),
-    {ok,SshPort}=db_host_spec:read(ssh_port,HostSpec),
-    {ok,Uid}=db_host_spec:read(uid,HostSpec),
-    {ok,Pwd}=db_host_spec:read(passwd,HostSpec),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     ErlCmd="erl "++PaArgs++" "++"-sname "++NodeName++" "++"-setcookie"++" "++CookieStr++" "++EnvArgs++" "++" -detached",
-    {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+    {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
     Node=list_to_atom(NodeName++"@"++HostName),
     CreateResult={my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,ErlCmd,?TimeOut),Node,HostSpec},
     %% connect
@@ -211,11 +211,11 @@ create_node(HostSpec,NodeName,CookieStr,PaArgs,EnvArgs)->
 %% @end
 %%--------------------------------------------------------------------
 active_nodes()->
-    [HostSpec||HostSpec<-db_host_spec:get_all_id(),
+    [HostSpec||HostSpec<-sd:call(dbetcd,db_host_spec,get_all_id,[],5000),
 	       true==active(HostSpec)].
 
 active(HostSpec)->
-    Result=case db_host_spec:read(connect_node,HostSpec) of
+    Result=case sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000) of
 	       {error,Reason}->
 		   {error,["Failed to read connect_node ",HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 	       {ok,Node}->
@@ -233,11 +233,11 @@ active(HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 stopped_nodes()->
-    [HostSpec||HostSpec<-db_host_spec:get_all_id(),
+    [HostSpec||HostSpec<-sd:call(dbetcd,db_host_spec,get_all_id,[],5000),
 	       true==stopped(HostSpec)].
 
 stopped(HostSpec)->
-    Result=case db_host_spec:read(connect_node,HostSpec) of
+    Result=case sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000) of
 	       {error,Reason}->
 		   {error,["Failed to read connect_node ",HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 	       {ok,Node}->

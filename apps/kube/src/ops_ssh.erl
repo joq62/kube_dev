@@ -45,10 +45,10 @@
 %% Returns: non
 %% -------------------------------------------------------------------	 
 call(HostSpec,LinuxCmd,TimeOut)->
-    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
-    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
-    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
-    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     Result=my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,LinuxCmd,TimeOut),
         
     Result.
@@ -65,11 +65,11 @@ create(HostSpec,NodeName,Cookie,PaArgs,EnvArgs)->
 
 create(HostSpec,NodeName,Cookie,PaArgs,EnvArgs,TimeOut)->    
   %  io:format(" ~p~n",[{?MODULE,?LINE,?FUNCTION_NAME,HostName,Cookie,NodeName,PaArgs,EnvArgs,TimeOut}]),
-    {ok,HostName}=sd:call(etcd,db_host_spec,read,[hostname,HostSpec],5000),
-    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
-    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
-    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
-    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+    {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     create(HostName,NodeName,Cookie,PaArgs,EnvArgs,
 	   {Ip,SshPort,Uid,Pwd},TimeOut).
 %% --------------------------------------------------------------------
@@ -116,11 +116,11 @@ create(HostName,NodeName,Cookie,PaArgs,EnvArgs,
 %% Returns: non
 %% --------------------------------------------------------------------
 delete_dir(HostSpec,Dir)->
- %   {ok,HostName}=sd:call(etcd,db_host_spec,read,[hostname,HostSpec],5000),
-    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
-    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
-    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
-    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+ %   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     TimeOut=5000,
     SshDeleteDir=my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,"rm -rf "++Dir,TimeOut),
     io:format("SshDeleteDir,HostSpec,Dir ~p~n",[{SshDeleteDir,HostSpec,Dir,?MODULE,?LINE}]),
@@ -138,10 +138,10 @@ delete_dir(HostSpec,Dir)->
 %% Returns: non
 %% --------------------------------------------------------------------
 create_dir(HostSpec,Dir)->
-    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
-    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
-    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
-    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     TimeOut=5000,
     my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,"rm -rf "++Dir,TimeOut),
     timer:sleep(2000),
@@ -159,10 +159,10 @@ create_dir(HostSpec,Dir)->
 %% Returns: non
 %% --------------------------------------------------------------------
 is_dir(HostSpec,Dir)->
-    {ok,Ip}=sd:call(etcd,db_host_spec,read,[local_ip,HostSpec],5000),
-    {ok,SshPort}=sd:call(etcd,db_host_spec,read,[ssh_port,HostSpec],5000),
-    {ok,Uid}=sd:call(etcd,db_host_spec,read,[uid,HostSpec],5000),
-    {ok,Pwd}=sd:call(etcd,db_host_spec,read,[passwd,HostSpec],5000),
+    {ok,Ip}=sd:call(dbetcd,db_host_spec,read,[local_ip,HostSpec],5000),
+    {ok,SshPort}=sd:call(dbetcd,db_host_spec,read,[ssh_port,HostSpec],5000),
+    {ok,Uid}=sd:call(dbetcd,db_host_spec,read,[uid,HostSpec],5000),
+    {ok,Pwd}=sd:call(dbetcd,db_host_spec,read,[passwd,HostSpec],5000),
     TimeOut=5000,
     case my_ssh:ssh_send(Ip,SshPort,Uid,Pwd,?IsDir(Dir),TimeOut) of
 	["false"]->

@@ -1,4 +1,10 @@
 -include("sender.hrl").
+
+%%%% Orchestrate Api -----------------------------------------------------------------------------
+%% kube:load_provider(ProviderSpec,HostSpec)
+-define(Orchestrate_Result(Result,Node,RpcTimeout),
+	rpc:call(Node,kube,orchestrate_result,[Result,?Sender],RpcTimeout)).
+
 %%%% Provider Api -----------------------------------------------------------------------------
 
 %% kube:load_provider(ProviderSpec,HostSpec)

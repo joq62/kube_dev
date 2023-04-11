@@ -10,7 +10,7 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
-
+-include("log.api").
 %% --------------------------------------------------------------------
 
  
@@ -22,7 +22,7 @@
 
 %%-------------------------------------------------------------------
 -record(state,{
-	       
+	       lock_id
 	      }).
 
 
@@ -47,9 +47,12 @@
 %init(ClusterSpec) -> 
 init([]) -> 
     io:format("Debug ~p~n",[{?MODULE,?LINE}]),
-    lib_db:dynamic_db_init([]),
+    LockId=?MODULE,
+    {atomic,ok}=sd:call(dbetcd,db_lock,create,[LockId,0],5000),
+   
    % sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[]]),
-    {ok, #state{}}.   
+    {ok, #state{lock_id=LockId},0
+    }.   
  
 
 %% --------------------------------------------------------------------
@@ -134,6 +137,18 @@ handle_call(Request, From, State) ->
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
 
+handle_cast({orchestrate_result,Result}, State) ->
+    case Result of
+	 {error,Reason}->
+	    ?LOG_WARNING("Error orchestrate_result ",[Reason]);
+	{ok,ResultHostController,ResultProviders}->
+	    ?LOG_NOTICE("orchestrate_result ",[ResultHostController,ResultProviders])
+    end,
+    spawn(fun()->orchestrate:start(State#state.lock_id) end),
+    {noreply, State};
+
+
+
 handle_cast(Msg, State) ->
     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Msg]]),
     {noreply, State}.
@@ -146,6 +161,10 @@ handle_cast(Msg, State) ->
 
 %%          {stop, Reason, State}            (terminate/2 is called)
 %% --------------------------------------------------------------------
+handle_info(timeout, State) ->
+    spawn(fun()->orchestrate:start(State#state.lock_id) end),
+    {noreply, State};
+
 handle_info(Info, State) ->
     sd:cast(log,log,warning,[?MODULE,?FUNCTION_NAME,?LINE,node(),"Unmatched signal",[Info]]),
     {noreply, State}.

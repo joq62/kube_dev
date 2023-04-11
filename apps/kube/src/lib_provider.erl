@@ -39,7 +39,7 @@
 %% @end
 %%--------------------------------------------------------------------
 load(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
     HostSpecExists=db_host_spec:member(HostSpec),
     IsStarted=lib_host:is_started_host_controller(HostSpec),
     Result=case {ProviderExists,HostSpecExists,IsStarted} of
@@ -50,21 +50,21 @@ load(ProviderSpec,HostSpec)->
 	       {true,true,false}->
 		   {error,["host controller not started ",HostSpec]};
 	       {true,true,true}->
-		   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),
+		   {ok,HostNode}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
 		   %% 
-		   {ok,ProviderDir}=db_provider_spec:read(dir,ProviderSpec),
+		   {ok,ProviderDir}=sd:call(dbetcd,db_provider_spec,read,[dir,ProviderSpec],5000),
 		   case rpc:call(HostNode,file,del_dir_r,[ProviderDir],5000) of
 		       {badrpc,Reason}->
 			   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 		       _ ->
-			   {ok,GitPath}=db_provider_spec:read(git_path,ProviderSpec),
+			   {ok,GitPath}=sd:call(dbetcd,db_provider_spec,read,[git_path,ProviderSpec],5000),
 			   case rpc:call(HostNode,os,cmd,["git clone "++GitPath],2*55*1000) of
 			       {badrpc,Reason}->
 				   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
 			       {error,Reason}->
 				   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 			       _->
-				   {ok,TarCmd}=db_provider_spec:read(tar_cmd,ProviderSpec),
+				   {ok,TarCmd}=sd:call(dbetcd,db_provider_spec,read,[tar_cmd,ProviderSpec],5000),
 				   case rpc:call(HostNode,os,cmd,[TarCmd],20*1000) of
 				       {badrpc,Reason}->
 					   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
@@ -72,10 +72,10 @@ load(ProviderSpec,HostSpec)->
 					   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 				       _-> 
 					   %% start slave
-					   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-					   {ok,CookieStr}=db_provider_spec:read(cookie,ProviderSpec),
-					   {ok,PaArgs}=db_provider_spec:read(pa_args,ProviderSpec),
-					   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+					   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+					   {ok,CookieStr}=sd:call(dbetcd,db_provider_spec,read,[cookie,ProviderSpec],5000),
+					   {ok,PaArgs}=sd:call(dbetcd,db_provider_spec,read,[pa_args,ProviderSpec],5000),
+					   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
 					   EnvArgs=" ",
 					   Args=PaArgs++" "++"-setcookie "++CookieStr++" "++EnvArgs,
 					   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
@@ -90,7 +90,7 @@ load(ProviderSpec,HostSpec)->
 						       {error,Reason}->
 							   {error,[Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 						       {ok,ProviderNode}->
-							   {ok,App}=db_provider_spec:read(app,ProviderSpec),
+							   {ok,App}=sd:call(dbetcd,db_provider_spec,read,[app,ProviderSpec],5000),
 							   case rpc:call(ProviderNode,code,is_loaded,[App],10*1000)of
 							       {badrpc,Reason}->
 								   {error,[badrpc,Reason,ProviderSpec,HostSpec,?MODULE,?FUNCTION_NAME,?LINE]};
@@ -126,8 +126,8 @@ load(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 stop(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     IsStarted=lib_host:is_started_host_controller(HostSpec),
     Result=case {ProviderExists,HostSpecExists,IsStarted} of
 	       {false,_,_}->
@@ -141,10 +141,10 @@ stop(ProviderSpec,HostSpec)->
 		       true->
 			   {error,["Already stopped provider ",ProviderSpec,HostSpec]};
 		       false->
-			   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-			   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+			   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+			   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
 			   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
-			   {ok,App}=db_provider_spec:read(app,ProviderSpec),
+			   {ok,App}=sd:call(dbetcd,db_provider_spec,read,[app,ProviderSpec],5000),
 			   case rpc:call(ProviderNode,application,stop,[App],10*1000)of
 			       {badrpc,Reason}->
 				   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
@@ -163,8 +163,8 @@ stop(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 unload(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     IsStarted=lib_host:is_started_host_controller(HostSpec),
     Result=case {ProviderExists,HostSpecExists,IsStarted} of
 	       {false,_,_}->
@@ -174,18 +174,18 @@ unload(ProviderSpec,HostSpec)->
 	       {true,true,false}->
 		   {error,["host controller not started ",HostSpec]};
 	       {true,true,true}->
-		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+		   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+		   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
-		   {ok,App}=db_provider_spec:read(app,ProviderSpec),
+		   {ok,App}=sd:call(dbetcd,db_provider_spec,read,[app,ProviderSpec],5000),
 		   case rpc:call(ProviderNode,application,unload,[App],10*1000) of
 		       {badrpc,Reason}->
 			   {error,["Failed to unload app",badrpc,App,ProviderSpec,HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 		       {error,Reason}->
 			   {error,["Failed to unload app ",ProviderSpec,HostSpec,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
 		       ok->
-			   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),
-			   {ok,ProviderDir}=db_provider_spec:read(dir,ProviderSpec),
+			   {ok,HostNode}=sd:call(dbetcd,db_provider_spec,read,[connect_node,HostSpec],5000),
+			   {ok,ProviderDir}=sd:call(dbetcd,db_provider_spec,read,[dir,ProviderSpec],5000),
 			   case rpc:call(HostNode,file,del_dir_r,[ProviderDir],10*1000)of
 			       {badrpc,Reason}->
 				   {error,[badrpc,Reason,?MODULE,?FUNCTION_NAME,?LINE]};
@@ -211,8 +211,8 @@ unload(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 start(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     IsStarted=lib_host:is_started_host_controller(HostSpec),
     Result=case {ProviderExists,HostSpecExists,IsStarted} of
 	       {false,_,_}->
@@ -222,9 +222,9 @@ start(ProviderSpec,HostSpec)->
 	       {true,true,false}->
 		   {error,["host controller not started ",HostSpec]};
 	       {true,true,true}->
-		   {ok,App}=db_provider_spec:read(app,ProviderSpec),
-		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+		   {ok,App}=sd:call(dbetcd,db_provider_spec,read,[app,ProviderSpec],5000),
+		   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+		   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
 		   case is_loaded(ProviderSpec,HostSpec) of
 		       false->
@@ -248,17 +248,17 @@ start(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 is_loaded(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     Result=case {ProviderExists,HostSpecExists} of
 	       {false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {_,false}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {true,true}->
-		   {ok,App}=db_provider_spec:read(app,ProviderSpec),
-		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
+		   {ok,App}=sd:call(dbetcd,db_provider_spec,read,[app,ProviderSpec],5000),
+		   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+		   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
 		   case rpc:call(ProviderNode,application,loaded_applications,[],10*1000) of
 		       {badrpc,_Reason}->
@@ -274,17 +274,17 @@ is_loaded(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 is_started(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     Result=case {ProviderExists,HostSpecExists} of
 	       {false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {_,false}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {true,true}->
-		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
-		   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),  
+		   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+		   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
+		   {ok,HostNode}=sd:call(dbetcd,db_provider_spec,read,[connect_node,HostSpec],5000),  
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
 		   case rpc:call(HostNode,net_adm,ping,[ProviderNode],5000) of
 		       {badrpc,_Reason}->
@@ -304,17 +304,17 @@ is_started(ProviderSpec,HostSpec)->
 %% @end
 %%--------------------------------------------------------------------
 is_stopped(ProviderSpec,HostSpec)->
-    ProviderExists=db_provider_spec:member(ProviderSpec),
-    HostSpecExists=db_host_spec:member(HostSpec),
+    ProviderExists=sd:call(dbetcd,db_provider_spec,member,[ProviderSpec],5000),
+    HostSpecExists=sd:call(dbetcd,db_provider_spec,member,[HostSpec],5000),
     Result=case {ProviderExists,HostSpecExists} of
 	       {false,_}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {_,false}->
 		   {error,["eexists ",{ProviderExists,ProviderSpec},{HostSpecExists,HostSpec}]};
 	       {true,true}->
-		   {ok,ProviderNodeName}=db_provider_spec:read(node_name,ProviderSpec),
-		   {ok,HostName}=db_host_spec:read(hostname,HostSpec),
-		   {ok,HostNode}=db_host_spec:read(connect_node,HostSpec),  
+		   {ok,ProviderNodeName}=sd:call(dbetcd,db_provider_spec,read,[node_name,ProviderSpec],5000),
+		   {ok,HostName}=sd:call(dbetcd,db_host_spec,read,[hostname,HostSpec],5000),
+		   {ok,HostNode}=sd:call(dbetcd,db_provider_spec,read,[connect_node,HostSpec],5000),  
 		   ProviderNode=list_to_atom(ProviderNodeName++"@"++HostName),
 		   case rpc:call(HostNode,net_adm,ping,[ProviderNode],5000) of
 		       {badrpc,_Reason}->

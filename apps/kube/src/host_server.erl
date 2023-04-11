@@ -14,6 +14,7 @@
 %% --------------------------------------------------------------------
 %% Include files
 %% --------------------------------------------------------------------
+-include("log.api").
 
 %% --------------------------------------------------------------------
 -define(HeartbeatTime,20*1000).
@@ -118,10 +119,10 @@ ping() ->
 %%          {stop, Reason}
 %% --------------------------------------------------------------------
 init([]) -> 
-    AllHosts=db_host_spec:get_all_id(),
+    AllHosts=sd:call(dbetcd,db_host_spec,get_all_id,[],5000),
     CookieStr=atom_to_list(erlang:get_cookie()),
     io:format("CookieStr ~p~n",[CookieStr]),
-    sd:cast(log,log,notice,[?MODULE,?FUNCTION_NAME,?LINE,node(),"server start",[AllHosts,CookieStr]]),
+    ?LOG_NOTICE("server start",[AllHosts,CookieStr]),
     {ok, #state{all_hosts=AllHosts,
 		cookie_str=?CookieStr}}.   
  
@@ -138,7 +139,7 @@ init([]) ->
 %% --------------------------------------------------------------------
 
 handle_call({start_controller,HostSpec},_From, State) ->
-    {ok,Node}=db_host_spec:read(connect_node,HostSpec),
+    {ok,Node}=sd:call(dbetcd,db_host_spec,read,[connect_node,HostSpec],5000),
     rpc:call(Node,init,stop,[]),
     timer:sleep(3000),
     PaArgs=" ",

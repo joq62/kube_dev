@@ -43,6 +43,9 @@
 	 is_started_provider/3,
 	 
 	 %% 
+
+	 orchestrate_result/1,
+	 orchestrate_result/2,
 	 ping/0,
 	 ping/1
 
@@ -70,6 +73,20 @@
 %% @spec
 %% @end
 %%--------------------------------------------------------------------
+orchestrate_result(Result,{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp})->
+    io:format("Time: ~p~n",[calendar:now_to_datetime(erlang:timestamp())]),
+    io:format("Sender: ~p~n",[{SenderNode,SenderPid,Module,FunctionName,Line,TimeStamp}]),
+    io:format("Input: ~p~n",[{?MODULE,?FUNCTION_NAME,[Result]}]),
+    T1=os:system_time(millisecond),
+    Result=orchestrate_result(Result),
+    T2=os:system_time(millisecond),
+    io:format("Output: ~p~n",[{?MODULE,?FUNCTION_NAME,[Result]}]),
+    io:format("Exection time (ms): ~p~n~n",[T2-T1]),
+    Result.
+    
+orchestrate_result(Result)->
+    gen_server:cast(?SERVER,{orchestrate_result,Result}).
+
 %%--------------------------------------------------------------------
 %% @doc
 %% @spec
