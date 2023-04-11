@@ -38,7 +38,7 @@ start([Arg1,Arg2])->
     io:format("Start ~p~n",[{Arg1,Arg2,?MODULE,?FUNCTION_NAME}]),
 
     ok=setup(),
-    []=lists:sort(nodes()),    
+    [dbetcd@c50]=lists:sort(nodes()),    
  
     io:format("End testing  SUCCESS!! ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
 %    init:stop(),
